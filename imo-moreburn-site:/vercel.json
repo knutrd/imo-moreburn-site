@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/stats?refresh=true",
-      "schedule": "0 8 * * *"
-    }
-  ]
-}
