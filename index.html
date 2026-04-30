@@ -716,6 +716,23 @@
     .nav-links a:hover { color: var(--ink-soft); }
     .concept-card:hover { background: transparent; }
   }
+
+  /* Scroll-triggered fade-in animation for sections */
+  .fade-in {
+    opacity: 0;
+    transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity;
+  }
+  .fade-in.visible {
+    opacity: 1;
+  }
+  /* Respect users who prefer reduced motion (accessibility) */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in {
+      opacity: 1;
+      transition: none;
+    }
+  }
 </style>
 </head>
 <body>
@@ -786,7 +803,7 @@
   </div>
 </section>
 
-<section id="concept">
+<section id="concept" class="fade-in">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">The concept</span>
@@ -832,7 +849,7 @@
   </div>
 </section>
 
-<section id="how" class="how-section">
+<section id="how" class="how-section fade-in">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">How it works</span>
@@ -906,7 +923,7 @@
   </div>
 </section>
 
-<section id="weex" class="collab-section">
+<section id="weex" class="collab-section fade-in">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">Partnership</span>
@@ -1072,7 +1089,7 @@
   </div>
 </section>
 
-<section id="burns" style="background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+<section id="burns" class="fade-in" style="background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
   <div class="container">
     <div class="burns-header">
       <div>
@@ -1142,7 +1159,7 @@
   </div>
 </section>
 
-<section class="cta-section">
+<section class="cta-section fade-in">
   <div class="container">
     <span class="section-tag" style="color: rgba(255,255,255,0.6);">Join the movement</span>
     <h2>You were trading anyway.<br><span class="muted">Might as well make it count.</span></h2>
@@ -1158,7 +1175,7 @@
   </div>
 </section>
 
-<section id="faq">
+<section id="faq" class="fade-in">
   <div class="container">
     <div class="section-header">
       <span class="section-tag">Frequently asked questions</span>
@@ -1406,6 +1423,34 @@
   }
 
   applyDataAndFetch();
+  initScrollFadeIn();
+
+  // Reveal sections with .fade-in class as they enter the viewport.
+  // Uses IntersectionObserver (modern, performant, no scroll listener).
+  function initScrollFadeIn() {
+    const elements = document.querySelectorAll('.fade-in');
+    if (elements.length === 0) return;
+
+    // If IntersectionObserver isn't supported, just show everything.
+    if (!('IntersectionObserver' in window)) {
+      elements.forEach(el => el.classList.add('visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);  // play once, no replay on scroll back
+        }
+      });
+    }, {
+      threshold: 0.12,                    // trigger when 12% of section is visible
+      rootMargin: '0px 0px -60px 0px'     // start fade slightly before fully entering
+    });
+
+    elements.forEach(el => observer.observe(el));
+  }
 
   function applyDataAndFetch() {
     applyData();
