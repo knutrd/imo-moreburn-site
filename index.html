@@ -6,6 +6,11 @@
 <title>IMO MoreBurn · A share of WEEX fees buys and burns IMO.</title>
 <meta name="description" content="Sign up on WEEX through our affiliate link. A portion of the trading fees is used to buy back and burn IMO tokens." />
 
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -67,11 +72,11 @@
   }
   .nav-links a:hover { color: var(--ink); }
   .nav-cta {
-    padding: 9px 20px; background: var(--ink); color: var(--bg);
+    padding: 9px 20px; background: var(--ink); color: #ffffff !important;
     border-radius: 6px; font-weight: 500; font-size: 0.88rem;
     transition: all 0.2s;
   }
-  .nav-cta:hover { background: #2a2a2a; }
+  .nav-cta:hover { background: #2a2a2a; color: #ffffff !important; }
   .menu-toggle { display: none; }
 
   .hero {
@@ -166,10 +171,14 @@
     font-family: var(--mono); font-size: 0.82rem;
     color: var(--ink-muted); margin-bottom: 32px; letter-spacing: 0.04em;
   }
-  .concept-icon { width: 36px; height: 36px; margin-bottom: 24px; color: var(--ink); }
+  .concept-head {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .concept-icon { width: 32px; height: 32px; color: var(--ink); flex-shrink: 0; }
   .concept-card h3 {
     font-weight: 500; font-size: 1.3rem;
-    margin-bottom: 12px; letter-spacing: -0.01em;
+    margin: 0; letter-spacing: -0.01em;
   }
   .concept-card p { color: var(--ink-soft); line-height: 1.6; font-size: 0.95rem; }
 
@@ -520,7 +529,8 @@
     /* Concept cards: tighter padding */
     .concept-card { padding: 32px 24px; }
     .concept-num { margin-bottom: 24px; }
-    .concept-icon { width: 32px; height: 32px; margin-bottom: 20px; }
+    .concept-icon { width: 28px; height: 28px; }
+    .concept-head { gap: 12px; margin-bottom: 14px; }
     .concept-card h3 { font-size: 1.2rem; }
     .concept-card p { font-size: 0.92rem; }
 
@@ -611,11 +621,8 @@
       <span>MoreBurn</span>
     </a>
     <ul class="nav-links" id="navLinks">
-      <li><a href="#concept">Concept</a></li>
-      <li><a href="#how">How it works</a></li>
-      <li><a href="#weex">WEEX</a></li>
-      <li><a href="#burns">Burns</a></li>
-      <li><a href="#faq">FAQ</a></li>
+      <li><a href="https://app.uniswap.org/swap?chain=base&inputCurrency=NATIVE&outputCurrency=0x5a7a2bf9ffae199f088b25837dcd7e115cf8e1bb" target="_blank" rel="noopener">Buy IMO</a></li>
+      <li><a href="#weex">Data</a></li>
       <li><a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener" class="nav-cta">Sign up</a></li>
     </ul>
     <button class="menu-toggle" id="menuToggle" aria-label="Menu">≡</button>
@@ -683,28 +690,34 @@
     <div class="concept-grid">
       <div class="concept-card">
         <div class="concept-num">01</div>
-        <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v18h18"/>
-          <path d="M7 14l4-4 4 4 5-5"/>
-        </svg>
-        <h3>You trade</h3>
+        <div class="concept-head">
+          <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="M7 14l4-4 4 4 5-5"/>
+          </svg>
+          <h3>You trade</h3>
+        </div>
         <p>Spot or futures, you use WEEX like any other exchange. The code <code style="font-family: var(--mono); font-size: 0.85rem;">vipmillion</code> identifies us as your referrer.</p>
       </div>
       <div class="concept-card">
         <div class="concept-num">02</div>
-        <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-        <h3>WEEX rebates</h3>
+        <div class="concept-head">
+          <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <h3>WEEX rebates</h3>
+        </div>
         <p>WEEX returns a portion of the fees you pay: up to 75% on both futures and spot trading.</p>
       </div>
       <div class="concept-card">
         <div class="concept-num">03</div>
-        <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M8 12h8"/>
-        </svg>
-        <h3>IMO is burned</h3>
+        <div class="concept-head">
+          <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8 12h8"/>
+          </svg>
+          <h3>IMO is burned</h3>
+        </div>
         <p>Part of the commission buys IMO tokens on Uniswap (Base) and sends them to a burn address. Forever.</p>
       </div>
     </div>

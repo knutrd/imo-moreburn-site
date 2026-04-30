@@ -94,9 +94,9 @@ window.SITE_DATA = {
     { date: "24/04/2026", volume: 0 },
     { date: "25/04/2026", volume: 0 },
     { date: "26/04/2026", volume: 0 },
-    { date: "27/04/2026", volume: 45000 },
-    { date: "28/04/2026", volume: 135000 },
-    { date: "29/04/2026", volume: 230000 },
+    { date: "27/04/2026", volume: 48074 },
+    { date: "28/04/2026", volume: 132674 },
+    { date: "29/04/2026", volume: 226880 },
     { date: "30/04/2026", volume: 278676 },
   ],
 
