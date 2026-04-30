@@ -67,6 +67,40 @@ window.SITE_DATA = {
   ],
 
   // ----------------------------------------------------------
+  //  VOLUME HISTORY (bar chart in the WEEX section)
+  // ----------------------------------------------------------
+  //  Cumulative trading volume in USD, one entry per day.
+  //  The bar chart shows the DAILY delta (today minus yesterday).
+  //  Add a new line every day with the latest cumulative total
+  //  (you can read it from /api/stats live response).
+  // ----------------------------------------------------------
+  volumeHistory: [
+    { date: "08/04/2026", volume: 0 },
+    { date: "09/04/2026", volume: 0 },
+    { date: "10/04/2026", volume: 0 },
+    { date: "11/04/2026", volume: 0 },
+    { date: "12/04/2026", volume: 0 },
+    { date: "13/04/2026", volume: 0 },
+    { date: "14/04/2026", volume: 0 },
+    { date: "15/04/2026", volume: 0 },
+    { date: "16/04/2026", volume: 0 },
+    { date: "17/04/2026", volume: 0 },
+    { date: "18/04/2026", volume: 0 },
+    { date: "19/04/2026", volume: 0 },
+    { date: "20/04/2026", volume: 0 },
+    { date: "21/04/2026", volume: 0 },
+    { date: "22/04/2026", volume: 0 },
+    { date: "23/04/2026", volume: 0 },
+    { date: "24/04/2026", volume: 0 },
+    { date: "25/04/2026", volume: 0 },
+    { date: "26/04/2026", volume: 0 },
+    { date: "27/04/2026", volume: 45000 },
+    { date: "28/04/2026", volume: 135000 },
+    { date: "29/04/2026", volume: 230000 },
+    { date: "30/04/2026", volume: 278676 },
+  ],
+
+  // ----------------------------------------------------------
   //  BURN REGISTRY
   // ----------------------------------------------------------
   //  Each entry represents the WEEX share of an on-chain burn transaction.

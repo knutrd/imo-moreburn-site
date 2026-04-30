@@ -892,6 +892,30 @@
         </div>
       </div>
     </div>
+
+    <div class="chart-wrap" style="margin-top: 32px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Volume</div>
+          <div class="chart-subtitle">Daily trading volume via referrals</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="volumeTotalValue">$0</div>
+          <div class="chart-total-label">Total cumulative</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="volumeChart"></canvas>
+        <div class="chart-empty" id="volumeEmpty">
+          <svg class="chart-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <p>Volume will be tracked daily.<br>First data point coming soon.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1164,6 +1188,7 @@
 
     drawBurnChart(burns);
     drawAffiliatesChart(data.affiliatesHistory || []);
+    drawVolumeChart(data.volumeHistory || []);
   }
 
   // Fetch live WEEX stats from /api/stats (refreshed daily by cron)
@@ -1389,6 +1414,99 @@
               font: { family: "'DM Mono', monospace", size: 11 },
               color: '#8a8a8a',
               callback: function(v) { return v.toLocaleString('en-US'); }
+            },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function drawVolumeChart(history) {
+    const canvas = document.getElementById('volumeChart');
+    const empty = document.getElementById('volumeEmpty');
+    const totalEl = document.getElementById('volumeTotalValue');
+    if (!canvas || !empty) return;
+
+    if (!history || history.length === 0) {
+      canvas.style.display = 'none';
+      empty.style.display = 'flex';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    empty.style.display = 'none';
+
+    // Sort by date
+    const sorted = [...history]
+      .map(p => ({ date: parseFrDate(p.date), volume: parseFloat(p.volume) || 0, label: p.date }))
+      .sort((a, b) => a.date - b.date);
+
+    // Compute daily delta from cumulative volume
+    const dailyData = sorted.map((p, i) => {
+      const prev = i > 0 ? sorted[i - 1].volume : 0;
+      const delta = Math.max(0, p.volume - prev);
+      return { label: p.label, daily: delta, cumul: p.volume };
+    });
+
+    const labels = dailyData.map(d => d.label);
+    const values = dailyData.map(d => d.daily);
+    const totalCumul = dailyData.length ? dailyData[dailyData.length - 1].cumul : 0;
+
+    if (totalEl) totalEl.textContent = '$' + Math.round(totalCumul).toLocaleString('en-US');
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Daily volume',
+          data: values,
+          backgroundColor: '#0a0a0a',
+          borderRadius: 3,
+          maxBarThickness: 28
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0a0a0a',
+            titleFont: { family: "'DM Mono', monospace", size: 11 },
+            bodyFont: { family: "'DM Sans', sans-serif", size: 13, weight: '500' },
+            padding: 12,
+            cornerRadius: 6,
+            displayColors: false,
+            callbacks: {
+              label: function(ctx) {
+                return '$' + Math.round(ctx.parsed.y).toLocaleString('en-US') + ' traded';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              maxRotation: 45,
+              minRotation: 0
+            },
+            border: { color: 'rgba(10,10,10,0.08)' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(10,10,10,0.05)' },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              callback: function(v) {
+                if (v >= 1000) return '$' + (v / 1000).toFixed(0) + 'k';
+                return '$' + v;
+              }
             },
             border: { display: false }
           }
