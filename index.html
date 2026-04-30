@@ -283,7 +283,7 @@
   .dex-chart-wrap {
     position: relative;
     width: 100%;
-    height: 600px;
+    height: 540px;
     border: 1px solid var(--line);
     border-radius: 12px;
     overflow: hidden;
@@ -291,11 +291,13 @@
   }
   .dex-chart-wrap iframe {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
+    height: 740px;       /* taller than wrapper to hide the bottom Txns/Holders panel */
     border: 0;
     display: block;
+    pointer-events: auto;
   }
   .dex-chart-actions {
     margin-top: 24px;
@@ -304,7 +306,8 @@
     flex-wrap: wrap;
   }
   @media (max-width: 600px) {
-    .dex-chart-wrap { height: 480px; }
+    .dex-chart-wrap { height: 420px; }
+    .dex-chart-wrap iframe { height: 600px; }
     .dex-chart-actions { flex-direction: column; align-items: stretch; }
     .dex-chart-actions .btn-primary,
     .dex-chart-actions .btn-secondary { justify-content: center; }
