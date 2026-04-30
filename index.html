@@ -280,6 +280,36 @@
   .fee-label { color: var(--ink-soft); }
   .fee-value { font-family: var(--mono); font-weight: 500; color: var(--ink); }
 
+  .dex-chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-soft);
+  }
+  .dex-chart-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  .dex-chart-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 600px) {
+    .dex-chart-wrap { height: 480px; }
+    .dex-chart-actions { flex-direction: column; align-items: stretch; }
+    .dex-chart-actions .btn-primary,
+    .dex-chart-actions .btn-secondary { justify-content: center; }
+  }
+
   .collab-milestone {
     margin-top: 16px;
     background: var(--ink); color: var(--bg);
@@ -718,7 +748,7 @@
           </svg>
           <h3>IMO is burned</h3>
         </div>
-        <p>Part of the commission buys IMO tokens on Uniswap (Base) and sends them to a burn address. Forever.</p>
+        <p>At least 50% of the commission (potentially up to 100%) buys IMO tokens on Uniswap (Base) and sends them to a burn address. Forever.</p>
       </div>
     </div>
   </div>
@@ -818,7 +848,7 @@
             </div>
           </div>
           <p class="collab-desc">
-            Trade on WEEX using our referral code. Part of the commissions we receive is used to buy back IMO tokens on the market and burn them permanently.
+            Trade on WEEX using our referral code. At least 50% of the commissions we receive is used to buy back IMO tokens on the market and burn them permanently.
           </p>
         </div>
         <a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener" class="collab-cta">
@@ -862,8 +892,8 @@
             <span class="fee-value" data-bind="weex.feesSpot">75%</span>
           </div>
           <div class="fee-row">
-            <span class="fee-label">Allocation to IMO burn</span>
-            <span class="fee-value" data-bind="weex.burnAllocation">Partial</span>
+            <span class="fee-label">Min used for burn</span>
+            <span class="fee-value" data-bind="weex.burnAllocation">50%</span>
           </div>
         </div>
 
@@ -928,6 +958,31 @@
           <p>Volume will be tracked daily.<br>First data point coming soon.</p>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="chart" style="border-top: 1px solid var(--line);">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">IMO live chart</span>
+      <h2>Real time price.<br><span class="muted">Powered by DexScreener.</span></h2>
+      <p class="section-lead">Track the IMO/WETH pair on Base in real time. Every burn reduces supply, putting upward pressure on price over time.</p>
+    </div>
+    <div class="dex-chart-wrap">
+      <iframe
+        src="https://dexscreener.com/base/0x007bb7a4bfc214df06474e39142288e99540f2b3?embed=1&theme=light&info=0"
+        title="IMO live chart on DexScreener"
+        loading="lazy"
+        allowfullscreen></iframe>
+    </div>
+    <div class="dex-chart-actions">
+      <a href="https://dexscreener.com/base/0x007bb7a4bfc214df06474e39142288e99540f2b3" target="_blank" rel="noopener" class="btn-secondary">
+        Open on DexScreener ↗
+      </a>
+      <a href="https://app.uniswap.org/swap?chain=base&inputCurrency=NATIVE&outputCurrency=0x5a7a2bf9ffae199f088b25837dcd7e115cf8e1bb" target="_blank" rel="noopener" class="btn-primary">
+        Buy IMO on Uniswap →
+      </a>
     </div>
   </div>
 </section>

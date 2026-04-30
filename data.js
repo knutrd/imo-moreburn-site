@@ -28,7 +28,7 @@ window.SITE_DATA = {
     imoBurnedViaWeex: "0",                // IMO already burned via WEEX fees
     feesFutures: "75%",                   // futures fees rebate share
     feesSpot: "75%",                      // spot fees rebate share
-    burnAllocation: "Partial"             // ex: "30%" if you fix a %, otherwise "Partial"
+    burnAllocation: "50%"                 // minimum committed to buy & burn (can go up to 100%)
   },
 
   // ----------------------------------------------------------
