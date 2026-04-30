@@ -303,6 +303,91 @@
   .fee-label { color: var(--ink-soft); }
   .fee-value { font-family: var(--mono); font-weight: 500; color: var(--ink); }
 
+  .leaderboard-wrap {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 32px;
+  }
+  .leaderboard-table-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+  }
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .leaderboard-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+  }
+  .leaderboard-table th.lb-vol { text-align: right; }
+  .leaderboard-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.94rem;
+  }
+  .leaderboard-table tr:last-child td { border-bottom: none; }
+  .leaderboard-table tr:hover td { background: var(--bg-soft); }
+  .lb-rank {
+    width: 70px;
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .lb-rank-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-right: 4px;
+    background: var(--bg-soft);
+    color: var(--ink);
+  }
+  .lb-rank-medal.gold   { background: #f5e9c8; color: #6b5018; }
+  .lb-rank-medal.silver { background: #e8e8e8; color: #4a4a4a; }
+  .lb-rank-medal.bronze { background: #f0dac8; color: #6b3a1d; }
+  .lb-uid {
+    font-family: var(--mono);
+    color: var(--ink-soft);
+  }
+  .lb-vol {
+    text-align: right;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .lb-loading,
+  .lb-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+  }
+  .leaderboard-disclaimer {
+    margin-top: 16px;
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+  @media (max-width: 600px) {
+    .leaderboard-wrap { padding: 24px 20px; }
+    .leaderboard-table th,
+    .leaderboard-table td { padding: 12px 10px; font-size: 0.86rem; }
+    .lb-rank { width: 50px; }
+  }
+
   .dex-chart-wrap {
     position: relative;
     width: 100%;
@@ -985,6 +1070,38 @@
         </div>
       </div>
     </div>
+
+    <div class="leaderboard-wrap" style="margin-top: 32px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Top traders</div>
+          <div class="chart-subtitle">Anonymous leaderboard, ranked by total volume</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="leaderboardCount">—</div>
+          <div class="chart-total-label">Active traders</div>
+        </div>
+      </div>
+
+      <div class="leaderboard-table-wrap">
+        <table class="leaderboard-table" id="leaderboardTable">
+          <thead>
+            <tr>
+              <th class="lb-rank">Rank</th>
+              <th class="lb-uid">Trader</th>
+              <th class="lb-vol">Total volume</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr><td colspan="3" class="lb-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="leaderboard-disclaimer">
+        Identifiers are partially masked. No personal data collected. Rankings update every 15 minutes.
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1319,6 +1436,43 @@
     applyData();
     fetchLiveStats();
     fetchHistory();
+    fetchLeaderboard();
+  }
+
+  async function fetchLeaderboard() {
+    const tbody = document.getElementById('leaderboardBody');
+    const countEl = document.getElementById('leaderboardCount');
+    if (!tbody) return;
+
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.top)) throw new Error(json.error || 'Invalid response');
+
+      if (countEl) countEl.textContent = json.totalTraders ?? json.top.length;
+
+      if (json.top.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="lb-empty">No active traders yet.<br>Be the first one.</td></tr>';
+        return;
+      }
+
+      const medalClass = (rank) => rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const formatVol = (v) => '$' + v.toLocaleString('en-US');
+
+      tbody.innerHTML = json.top.map(t => `
+        <tr>
+          <td class="lb-rank">
+            <span class="lb-rank-medal ${medalClass(t.rank)}">${t.rank}</span>
+          </td>
+          <td class="lb-uid">${t.uidMasked}</td>
+          <td class="lb-vol">${formatVol(t.totalVolume)}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.warn('Leaderboard unavailable.', err);
+      tbody.innerHTML = '<tr><td colspan="3" class="lb-empty">Leaderboard temporarily unavailable.</td></tr>';
+    }
   }
 
   // Fetch the auto-tracked history from /api/history (Vercel Blob).
