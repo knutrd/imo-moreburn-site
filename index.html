@@ -1295,6 +1295,50 @@
   function applyDataAndFetch() {
     applyData();
     fetchLiveStats();
+    fetchHistory();
+  }
+
+  // Fetch the auto-tracked history from /api/history (Vercel Blob).
+  // If it returns valid data, redraw the charts with it.
+  // Otherwise, charts keep showing the data.js fallback.
+  async function fetchHistory() {
+    try {
+      const res = await fetch('/api/history');
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.snapshots) || json.snapshots.length === 0) return;
+
+      // Convert YYYY-MM-DD to DD/MM/YYYY (the format the chart parser expects)
+      const toFr = (iso) => {
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+      };
+
+      const affiliatesHistory = json.snapshots.map(s => ({
+        date: toFr(s.date),
+        accounts: s.accounts
+      }));
+
+      const volumeHistory = json.snapshots.map(s => ({
+        date: toFr(s.date),
+        volume: s.volume
+      }));
+
+      // Redraw with the live history.
+      // We destroy and recreate the Chart instances, so we need to clean up the old canvases.
+      ['affiliatesChart', 'volumeChart'].forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) {
+          const existing = window.Chart && Chart.getChart && Chart.getChart(canvas);
+          if (existing) existing.destroy();
+        }
+      });
+
+      drawAffiliatesChart(affiliatesHistory);
+      drawVolumeChart(volumeHistory);
+    } catch (err) {
+      console.warn('Live history unavailable, using data.js fallback.', err);
+    }
   }
 
   function drawBurnChart(burns) {
