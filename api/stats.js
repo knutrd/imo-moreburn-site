@@ -7,13 +7,15 @@
 //   - cron-job.org every 15 minutes (with Bearer auth + ?refresh=true)
 //   - Vercel cron daily as backup (with Bearer auth + ?refresh=true)
 //   - visitors on every page load (no auth, served from CDN cache)
+//
+//  Debug mode:
+//   - Add ?debug=true&secret=<CRON_SECRET> to see raw WEEX responses
 // ============================================================
 
 import crypto from 'crypto';
 
 const WEEX_API = 'https://api-spot.weex.com';
 
-// WEEX requires HMAC SHA256 signing of every request
 function signRequest(timestamp, method, requestPath, body, secret) {
   const message = timestamp + method.toUpperCase() + requestPath + (body || '');
   return crypto.createHmac('sha256', secret).update(message).digest('base64');
@@ -44,24 +46,63 @@ async function callWeex(path, method = 'GET', body = '') {
     body: method !== 'GET' ? body : undefined
   });
 
+  const text = await response.text();
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(`WEEX API ${path} ${response.status}: ${errorText.substring(0, 200)}`);
+    throw new Error(`WEEX API ${path} ${response.status}: ${text.substring(0, 300)}`);
   }
-
-  return response.json();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`WEEX API ${path} returned non-JSON: ${text.substring(0, 300)}`);
+  }
 }
 
-// Helper: aggregate volume + commission from getChannelUserTradeAndAsset.
-// WEEX caps the query window to 90 days; we slide a window across the last
-// year (365 days) to approximate "lifetime" totals.
+// Try several variations to find what works
+async function fetchAffiliateRaw() {
+  const now = Date.now();
+  const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
+  const ninetyDays = 90 * 24 * 60 * 60 * 1000;
+  const ninetyAgo = now - ninetyDays;
+
+  const out = {};
+
+  // 1. getAffiliateUIDs without time filter (try the simplest call)
+  try {
+    out.uidsNoFilter = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=100');
+  } catch (e) {
+    out.uidsNoFilterError = e.message;
+  }
+
+  // 2. getAffiliateUIDs with 1y window
+  try {
+    out.uids1y = await callWeex(`/api/v3/rebate/affiliate/getAffiliateUIDs?startTime=${oneYearAgo}&endTime=${now}&page=1&pageSize=100`);
+  } catch (e) {
+    out.uids1yError = e.message;
+  }
+
+  // 3. getChannelUserTradeAndAsset 90d window
+  try {
+    out.tradeData = await callWeex(`/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`);
+  } catch (e) {
+    out.tradeDataError = e.message;
+  }
+
+  // 4. getAffiliateCommission v2 90d window
+  try {
+    out.commissions = await callWeex(`/api/v2/rebate/affiliate/getAffiliateCommission?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`);
+  } catch (e) {
+    out.commissionsError = e.message;
+  }
+
+  return out;
+}
+
 async function aggregateTradingData() {
   const now = Date.now();
   const ninetyDays = 90 * 24 * 60 * 60 * 1000;
   let totalVolume = 0;
   let totalCommission = 0;
 
-  // Slide 4 windows of 90 days back = up to 360 days of history
   for (let i = 0; i < 4; i++) {
     const endTime = now - i * ninetyDays;
     const startTime = endTime - ninetyDays + 1;
@@ -72,7 +113,6 @@ async function aggregateTradingData() {
       try {
         resp = await callWeex(path);
       } catch (err) {
-        // Window failed (rate limit or no data) — skip rather than fail the whole call
         break;
       }
       const records = resp?.records || resp?.data?.records || [];
@@ -90,18 +130,34 @@ async function aggregateTradingData() {
   return { totalVolume, totalCommission };
 }
 
-// Helper: count total registered referrals via getAffiliateUIDs (lifetime via 1y window)
 async function countAffiliates() {
-  const now = Date.now();
-  const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
-  // First call: just to get the `total` field
-  const path = `/api/v3/rebate/affiliate/getAffiliateUIDs?startTime=${oneYearAgo}&endTime=${now}&page=1&pageSize=1`;
-  const resp = await callWeex(path);
-  return resp?.total ?? resp?.data?.total ?? 0;
+  // First try without any time filter (cleanest call)
+  try {
+    const resp = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=1');
+    const total = resp?.total ?? resp?.data?.total;
+    if (typeof total === 'number' && total > 0) return total;
+    // Fallback: count by reading the list
+    const list = resp?.channelUserInfoItemList || resp?.data?.channelUserInfoItemList || [];
+    if (list.length > 0) return list.length;
+  } catch (err) {
+    // continue to fallback below
+  }
+
+  // Fallback with explicit 1y window
+  try {
+    const now = Date.now();
+    const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
+    const resp = await callWeex(`/api/v3/rebate/affiliate/getAffiliateUIDs?startTime=${oneYearAgo}&endTime=${now}&page=1&pageSize=100`);
+    const total = resp?.total ?? resp?.data?.total;
+    if (typeof total === 'number') return total;
+    const list = resp?.channelUserInfoItemList || resp?.data?.channelUserInfoItemList || [];
+    return list.length;
+  } catch (err) {
+    return 0;
+  }
 }
 
 async function fetchAffiliateStats() {
-  // Run both calls in parallel for speed
   const [accountsResult, tradingResult] = await Promise.allSettled([
     countAffiliates(),
     aggregateTradingData()
@@ -124,8 +180,20 @@ export default async function handler(req, res) {
   const authHeader = req.headers['authorization'];
   const isAuthorizedCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
   const isRefreshRequest = req.query?.refresh === 'true';
+  const isDebugRequest = req.query?.debug === 'true' && req.query?.secret === cronSecret;
 
-  // Reject unauthorized refresh attempts
+  // Debug mode: dump raw WEEX responses (auth required)
+  if (isDebugRequest) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Type', 'application/json');
+    try {
+      const raw = await fetchAffiliateRaw();
+      return res.status(200).json({ debug: true, raw });
+    } catch (err) {
+      return res.status(200).json({ debug: true, error: err.message });
+    }
+  }
+
   if (isRefreshRequest && !isAuthorizedCron) {
     return res.status(401).json({
       success: false,
@@ -133,9 +201,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // CDN cache strategy:
-  //  - Public reads: serve cached version for 15 min, allow stale for up to 24h
-  //  - Cron refresh: bypass cache and write a fresh value
   if (isAuthorizedCron) {
     res.setHeader('Cache-Control', 'no-store');
   } else {
@@ -145,7 +210,6 @@ export default async function handler(req, res) {
 
   try {
     const weexStats = await fetchAffiliateStats();
-
     return res.status(200).json({
       success: true,
       updatedAt: new Date().toISOString(),
