@@ -949,9 +949,9 @@
             <div class="collab-stat-sub">traded via referrals</div>
           </div>
           <div class="collab-stat">
-            <div class="collab-stat-label">Pending commissions</div>
+            <div class="collab-stat-label">Awaiting burn</div>
             <div class="collab-stat-value" data-bind="weex.commissionsPending">$0</div>
-            <div class="collab-stat-sub">ready to burn</div>
+            <div class="collab-stat-sub">&ge;50% will be burned</div>
           </div>
           <div class="collab-stat">
             <div class="collab-stat-label">IMO already burned</div>
@@ -1364,10 +1364,32 @@
       if (!json.success || !json.weex) return;
 
       const live = json.weex;
+
+      // Compute "Awaiting burn" = total commissions minus everything already burned.
+      // Burns are listed in data.js > burns[] with a `usdAmount` field.
+      const data = window.SITE_DATA || {};
+      const totalBurnedUsd = (data.burns || []).reduce((sum, b) => {
+        const v = typeof b.usdAmount === 'number' ? b.usdAmount : parseFloat(b.usdAmount) || 0;
+        return sum + v;
+      }, 0);
+
+      // Parse the live "$125.40" string into a number, subtract burned, format back as $X.XX
+      let awaitingDisplay = live.commissionsPending;
+      if (typeof live.commissionsPending === 'string') {
+        const parsed = parseFloat(live.commissionsPending.replace(/[^0-9.\-]/g, ''));
+        if (!Number.isNaN(parsed)) {
+          const remaining = Math.max(0, parsed - totalBurnedUsd);
+          awaitingDisplay = '$' + remaining.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        }
+      }
+
       const map = {
         'weex.accounts': live.accounts,
         'weex.volume48h': live.volume48h,
-        'weex.commissionsPending': live.commissionsPending
+        'weex.commissionsPending': awaitingDisplay
       };
 
       Object.entries(map).forEach(([key, value]) => {
