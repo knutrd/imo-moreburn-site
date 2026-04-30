@@ -769,9 +769,9 @@
       <div class="metric-sub">via WEEX fees</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Burns executed</div>
-      <div class="metric-value" data-bind="metrics.totalBurns">0</div>
-      <div class="metric-sub">on chain transactions</div>
+      <div class="metric-label">USD burned</div>
+      <div class="metric-value" data-bind="metrics.totalUsdBurned">$0</div>
+      <div class="metric-sub">market value at burn</div>
     </div>
     <div class="metric">
       <div class="metric-label">WEEX fees rebated</div>
@@ -1338,6 +1338,16 @@
 
     const countEl = document.getElementById('burnsCount');
     if (countEl) countEl.textContent = burns.length;
+
+    // Auto-compute total USD burned from burns[].usdAmount
+    const totalUsd = burns.reduce((sum, b) => {
+      const v = typeof b.usdAmount === 'number' ? b.usdAmount : parseFloat(b.usdAmount) || 0;
+      return sum + v;
+    }, 0);
+    const usdEl = document.querySelector('[data-bind="metrics.totalUsdBurned"]');
+    if (usdEl) {
+      usdEl.textContent = '$' + totalUsd.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
 
     drawBurnChart(burns);
     drawAffiliatesChart(data.affiliatesHistory || []);

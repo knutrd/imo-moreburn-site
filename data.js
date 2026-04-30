@@ -111,6 +111,9 @@ window.SITE_DATA = {
   //  tracks. The "txTotalAmount" field (optional) is the full amount in
   //  the transaction, for transparency.
   //
+  //  The "usdAmount" field is the dollar value of "amount" at the time of
+  //  the burn. It feeds the "USD burned" metric (auto-summed across burns).
+  //
   //  Leave the array EMPTY [] until your first burn.
   // ----------------------------------------------------------
   burns: [
@@ -118,6 +121,7 @@ window.SITE_DATA = {
     // {
     //   date: "15/05/2026",                  // DD/MM/YYYY
     //   amount: "5,230 IMO",                 // share burned via WEEX fees (shown in chart)
+    //   usdAmount: 487,                      // dollar value of "amount" at burn time (number, no $)
     //   txTotalAmount: "12,500 IMO",         // optional: full burn in this tx (WEEX + real estate + ...)
     //   txHash: "0xabc123...def456",         // short hash for display
     //   txUrl: "https://basescan.org/tx/0xabc123def456",
