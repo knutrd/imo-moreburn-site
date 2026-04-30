@@ -39,12 +39,31 @@ window.SITE_DATA = {
   //  Leave the array EMPTY [] if you want to hide the chart for now.
   // ----------------------------------------------------------
   affiliatesHistory: [
-    // Examples to duplicate over time:
-    // { date: "01/04/2026", accounts: 0 },
-    // { date: "08/04/2026", accounts: 12 },
-    // { date: "15/04/2026", accounts: 34 },
-    // { date: "22/04/2026", accounts: 67 },
-    // { date: "29/04/2026", accounts: 102 },
+    // Daily cumulative count of registered accounts.
+    // Update with the latest snapshot every day to keep the curve current.
+    { date: "08/04/2026", accounts: 0 },
+    { date: "09/04/2026", accounts: 2 },
+    { date: "10/04/2026", accounts: 2 },
+    { date: "11/04/2026", accounts: 2 },
+    { date: "12/04/2026", accounts: 2 },
+    { date: "13/04/2026", accounts: 2 },
+    { date: "14/04/2026", accounts: 2 },
+    { date: "15/04/2026", accounts: 2 },
+    { date: "16/04/2026", accounts: 2 },
+    { date: "17/04/2026", accounts: 3 },
+    { date: "18/04/2026", accounts: 3 },
+    { date: "19/04/2026", accounts: 3 },
+    { date: "20/04/2026", accounts: 3 },
+    { date: "21/04/2026", accounts: 3 },
+    { date: "22/04/2026", accounts: 3 },
+    { date: "23/04/2026", accounts: 3 },
+    { date: "24/04/2026", accounts: 3 },
+    { date: "25/04/2026", accounts: 4 },
+    { date: "26/04/2026", accounts: 5 },
+    { date: "27/04/2026", accounts: 6 },
+    { date: "28/04/2026", accounts: 12 },
+    { date: "29/04/2026", accounts: 27 },
+    { date: "30/04/2026", accounts: 28 },
   ],
 
   // ----------------------------------------------------------
