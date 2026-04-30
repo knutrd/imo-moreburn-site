@@ -8,13 +8,20 @@
 //   - Vercel cron daily as backup (with Bearer auth + ?refresh=true)
 //   - visitors on every page load (no auth, served from CDN cache)
 //
-//  Debug mode:
-//   - Add ?debug=true&secret=<CRON_SECRET> to see raw WEEX responses
+//  Debug mode (auth required):
+//   - /api/stats?debug=true&secret=<CRON_SECRET>
+//     Returns raw WEEX responses for troubleshooting.
 // ============================================================
 
 import crypto from 'crypto';
 
 const WEEX_API = 'https://api-spot.weex.com';
+
+// Estimated commission rate:
+//   futures fee ≈ 0.06% (taker)
+//   affiliate rebate share = 75%
+//   so commission ≈ volume × 0.06% × 0.75 = volume × 0.00045
+const COMMISSION_RATE = 0.0006 * 0.75;
 
 function signRequest(timestamp, method, requestPath, body, secret) {
   const message = timestamp + method.toUpperCase() + requestPath + (body || '');
@@ -57,97 +64,10 @@ async function callWeex(path, method = 'GET', body = '') {
   }
 }
 
-// Try several variations to find what works
-async function fetchAffiliateRaw() {
-  const now = Date.now();
-  const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
-  const ninetyDays = 90 * 24 * 60 * 60 * 1000;
-  const ninetyAgo = now - ninetyDays;
-
-  const out = {};
-
-  // 1. getAffiliateUIDs without time filter (try the simplest call)
-  try {
-    out.uidsNoFilter = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=100');
-  } catch (e) {
-    out.uidsNoFilterError = e.message;
-  }
-
-  // 2. getAffiliateUIDs with 1y window
-  try {
-    out.uids1y = await callWeex(`/api/v3/rebate/affiliate/getAffiliateUIDs?startTime=${oneYearAgo}&endTime=${now}&page=1&pageSize=100`);
-  } catch (e) {
-    out.uids1yError = e.message;
-  }
-
-  // 3. getChannelUserTradeAndAsset 90d window
-  try {
-    out.tradeData = await callWeex(`/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`);
-  } catch (e) {
-    out.tradeDataError = e.message;
-  }
-
-  // 4. getAffiliateCommission v2 90d window
-  try {
-    out.commissions = await callWeex(`/api/v2/rebate/affiliate/getAffiliateCommission?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`);
-  } catch (e) {
-    out.commissionsError = e.message;
-  }
-
-  return out;
-}
-
-async function aggregateTradingData() {
-  const now = Date.now();
-  const ninetyDays = 90 * 24 * 60 * 60 * 1000;
-  let totalVolume = 0;
-  let totalCommission = 0;
-
-  for (let i = 0; i < 4; i++) {
-    const endTime = now - i * ninetyDays;
-    const startTime = endTime - ninetyDays + 1;
-    let page = 1;
-    while (true) {
-      const path = `/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${startTime}&endTime=${endTime}&page=${page}&pageSize=100`;
-      let resp;
-      try {
-        resp = await callWeex(path);
-      } catch (err) {
-        break;
-      }
-      const records = resp?.records || resp?.data?.records || [];
-      if (records.length === 0) break;
-      for (const r of records) {
-        totalVolume += parseFloat(r.spotTradingAmount || 0) + parseFloat(r.futuresTradingAmount || 0);
-        totalCommission += parseFloat(r.commission || 0);
-      }
-      const totalPages = resp?.pages || resp?.data?.pages || 1;
-      if (page >= totalPages) break;
-      page += 1;
-    }
-  }
-
-  return { totalVolume, totalCommission };
-}
-
+// Total registered affiliates (lifetime cumulative)
 async function countAffiliates() {
-  // First try without any time filter (cleanest call)
   try {
     const resp = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=1');
-    const total = resp?.total ?? resp?.data?.total;
-    if (typeof total === 'number' && total > 0) return total;
-    // Fallback: count by reading the list
-    const list = resp?.channelUserInfoItemList || resp?.data?.channelUserInfoItemList || [];
-    if (list.length > 0) return list.length;
-  } catch (err) {
-    // continue to fallback below
-  }
-
-  // Fallback with explicit 1y window
-  try {
-    const now = Date.now();
-    const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
-    const resp = await callWeex(`/api/v3/rebate/affiliate/getAffiliateUIDs?startTime=${oneYearAgo}&endTime=${now}&page=1&pageSize=100`);
     const total = resp?.total ?? resp?.data?.total;
     if (typeof total === 'number') return total;
     const list = resp?.channelUserInfoItemList || resp?.data?.channelUserInfoItemList || [];
@@ -157,21 +77,83 @@ async function countAffiliates() {
   }
 }
 
+// Sum spot + futures volume across all referrals.
+// WEEX caps the query window to 90 days; we slide 4 windows to cover the last 360 days.
+async function aggregateVolume() {
+  const now = Date.now();
+  const windowSize = 90 * 24 * 60 * 60 * 1000;
+  let totalVolume = 0;
+
+  for (let i = 0; i < 4; i++) {
+    const endTime = now - i * windowSize;
+    const startTime = endTime - windowSize + 1;
+    let page = 1;
+
+    while (true) {
+      const path = `/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${startTime}&endTime=${endTime}&page=${page}&pageSize=100`;
+      let resp;
+      try {
+        resp = await callWeex(path);
+      } catch {
+        break;
+      }
+      const records = resp?.records || resp?.data?.records || [];
+      if (records.length === 0) break;
+      for (const r of records) {
+        totalVolume += parseFloat(r.spotTradingAmount || 0) + parseFloat(r.futuresTradingAmount || 0);
+      }
+      const totalPages = resp?.pages || resp?.data?.pages || 1;
+      if (page >= totalPages) break;
+      page += 1;
+    }
+  }
+
+  return totalVolume;
+}
+
+// Debug-only: return raw WEEX responses for troubleshooting
+async function fetchAffiliateRaw() {
+  const now = Date.now();
+  const ninetyAgo = now - 90 * 24 * 60 * 60 * 1000;
+  const out = {};
+
+  try {
+    out.uidsNoFilter = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=100');
+  } catch (e) {
+    out.uidsNoFilterError = e.message;
+  }
+
+  try {
+    out.tradeData = await callWeex(`/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`);
+  } catch (e) {
+    out.tradeDataError = e.message;
+  }
+
+  try {
+    out.commissions = await callWeex(`/api/v2/rebate/affiliate/getAffiliateCommission?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`);
+  } catch (e) {
+    out.commissionsError = e.message;
+  }
+
+  return out;
+}
+
 async function fetchAffiliateStats() {
-  const [accountsResult, tradingResult] = await Promise.allSettled([
+  const [accountsResult, volumeResult] = await Promise.allSettled([
     countAffiliates(),
-    aggregateTradingData()
+    aggregateVolume()
   ]);
 
   const accounts = accountsResult.status === 'fulfilled' ? accountsResult.value : 0;
-  const trading = tradingResult.status === 'fulfilled'
-    ? tradingResult.value
-    : { totalVolume: 0, totalCommission: 0 };
+  const totalVolume = volumeResult.status === 'fulfilled' ? volumeResult.value : 0;
+
+  // Estimated commissions: volume × 0.06% × 75%
+  const estimatedCommission = totalVolume * COMMISSION_RATE;
 
   return {
     accounts: String(accounts),
-    volume48h: '$' + Math.round(trading.totalVolume).toLocaleString('en-US'),
-    commissionsPending: '$' + trading.totalCommission.toFixed(2),
+    volume48h: '$' + Math.round(totalVolume).toLocaleString('en-US'),
+    commissionsPending: '$' + estimatedCommission.toFixed(2),
   };
 }
 
@@ -182,7 +164,7 @@ export default async function handler(req, res) {
   const isRefreshRequest = req.query?.refresh === 'true';
   const isDebugRequest = req.query?.debug === 'true' && req.query?.secret === cronSecret;
 
-  // Debug mode: dump raw WEEX responses (auth required)
+  // Debug mode: dump raw WEEX responses
   if (isDebugRequest) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Content-Type', 'application/json');
