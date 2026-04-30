@@ -11,7 +11,7 @@ window.SITE_DATA = {
   //  MAIN METRICS (top of the site, just below the hero)
   // ----------------------------------------------------------
   metrics: {
-    totalBurned: "0",          // ex: "12,450" - total IMO tokens burned
+    totalBurned: "2,083",      // ex: "12,450" - total IMO tokens burned (WEEX share)
     totalBurns: "0",           // ex: "3" - number of burn transactions executed
     futuresFeeShare: "75%",    // share of futures fees rebated by WEEX
     cadence: "Monthly"         // "Weekly" / "Monthly" / "Quarterly"
@@ -25,7 +25,7 @@ window.SITE_DATA = {
     accounts: "0",                        // accounts signed up via your link (WEEX dashboard)
     volume48h: "$0",                      // 48h volume traded by your referrals
     commissionsPending: "$0",             // commissions accumulated, ready to burn
-    imoBurnedViaWeex: "0",                // IMO already burned via WEEX fees
+    imoBurnedViaWeex: "2,083",            // IMO already burned via WEEX fees
     feesFutures: "75%",                   // futures fees rebate share
     feesSpot: "75%",                      // spot fees rebate share
     burnAllocation: "50%"                 // minimum committed to buy & burn (can go up to 100%)
@@ -117,7 +117,17 @@ window.SITE_DATA = {
   //  Leave the array EMPTY [] until your first burn.
   // ----------------------------------------------------------
   burns: [
-    // Example to duplicate after your first burn:
+    {
+      date: "30/04/2026",
+      amount: "2,083 IMO",
+      usdAmount: 1000,
+      txTotalAmount: "74,123 IMO",
+      txHash: "0x014d6358...91d733ae",
+      txUrl: "https://basescan.org/tx/0x014d635853f3284b246f2d0f642477419c1e2cb89ae5365ca7a7b36091d733ae",
+      source: "WEEX",
+      type: "Burn"
+    },
+    // Example to duplicate after your next burn:
     // {
     //   date: "15/05/2026",                  // DD/MM/YYYY
     //   amount: "5,230 IMO",                 // share burned via WEEX fees (shown in chart)
