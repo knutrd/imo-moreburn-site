@@ -1455,10 +1455,23 @@
   // Otherwise, charts keep showing the data.js fallback.
   async function fetchHistory() {
     try {
-      const res = await fetch('/api/history');
-      if (!res.ok) return;
-      const json = await res.json();
-      if (!json.success || !Array.isArray(json.snapshots) || json.snapshots.length === 0) return;
+      // Fetch both /api/history (snapshots) and /api/stats (live) in parallel
+      const [historyRes, liveRes] = await Promise.all([
+        fetch('/api/history'),
+        fetch('/api/stats')
+      ]);
+
+      const historyJson = historyRes.ok ? await historyRes.json() : null;
+      const liveJson = liveRes.ok ? await liveRes.json() : null;
+
+      const snapshots = (historyJson && historyJson.success && Array.isArray(historyJson.snapshots))
+        ? historyJson.snapshots : [];
+
+      // We need at least the static data.js OR snapshots to draw something
+      const data = window.SITE_DATA || {};
+      const hasSnapshots = snapshots.length > 0;
+      const hasFallback = (data.affiliatesHistory || []).length > 0 || (data.volumeHistory || []).length > 0;
+      if (!hasSnapshots && !hasFallback) return;
 
       // Convert YYYY-MM-DD to DD/MM/YYYY (the format the chart parser expects)
       const toFr = (iso) => {
@@ -1467,19 +1480,35 @@
       };
 
       // Build a Map of static fallback data keyed by date (DD/MM/YYYY)
-      const data = window.SITE_DATA || {};
       const baseAffiliates = new Map();
       (data.affiliatesHistory || []).forEach(p => baseAffiliates.set(p.date, p.accounts));
       const baseVolume = new Map();
       (data.volumeHistory || []).forEach(p => baseVolume.set(p.date, p.volume));
 
-      // Overlay blob snapshots on top of fallback data.
-      // Blob snapshots take priority for any matching date.
-      json.snapshots.forEach(s => {
+      // Overlay blob snapshots on top of fallback data
+      snapshots.forEach(s => {
         const frDate = toFr(s.date);
         baseAffiliates.set(frDate, s.accounts);
         baseVolume.set(frDate, s.volume);
       });
+
+      // Override today's point with live API values to eliminate the up-to-15-min lag
+      // between the live counters at the top and the chart at the bottom.
+      if (liveJson && liveJson.success && liveJson.weex) {
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const todayFr = toFr(todayIso);
+
+        const liveAccounts = parseInt(liveJson.weex.accounts, 10);
+        if (Number.isFinite(liveAccounts)) {
+          baseAffiliates.set(todayFr, liveAccounts);
+        }
+
+        // Volume comes as "$280,758" - parse to integer
+        const liveVolume = parseFloat(String(liveJson.weex.volume48h || '').replace(/[^\d.]/g, ''));
+        if (Number.isFinite(liveVolume) && liveVolume > 0) {
+          baseVolume.set(todayFr, liveVolume);
+        }
+      }
 
       // Convert maps back to arrays sorted by date (DD/MM/YYYY)
       const parseFr = (str) => {
