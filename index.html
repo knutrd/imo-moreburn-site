@@ -1491,18 +1491,34 @@
         return `${d}/${m}/${y}`;
       };
 
-      const affiliatesHistory = json.snapshots.map(s => ({
-        date: toFr(s.date),
-        accounts: s.accounts
-      }));
+      // Build a Map of static fallback data keyed by date (DD/MM/YYYY)
+      const data = window.SITE_DATA || {};
+      const baseAffiliates = new Map();
+      (data.affiliatesHistory || []).forEach(p => baseAffiliates.set(p.date, p.accounts));
+      const baseVolume = new Map();
+      (data.volumeHistory || []).forEach(p => baseVolume.set(p.date, p.volume));
 
-      const volumeHistory = json.snapshots.map(s => ({
-        date: toFr(s.date),
-        volume: s.volume
-      }));
+      // Overlay blob snapshots on top of fallback data.
+      // Blob snapshots take priority for any matching date.
+      json.snapshots.forEach(s => {
+        const frDate = toFr(s.date);
+        baseAffiliates.set(frDate, s.accounts);
+        baseVolume.set(frDate, s.volume);
+      });
 
-      // Redraw with the live history.
-      // We destroy and recreate the Chart instances, so we need to clean up the old canvases.
+      // Convert maps back to arrays sorted by date (DD/MM/YYYY)
+      const parseFr = (str) => {
+        const [d, m, y] = str.split('/');
+        return new Date(+y, +m - 1, +d);
+      };
+      const affiliatesHistory = Array.from(baseAffiliates.entries())
+        .map(([date, accounts]) => ({ date, accounts }))
+        .sort((a, b) => parseFr(a.date) - parseFr(b.date));
+      const volumeHistory = Array.from(baseVolume.entries())
+        .map(([date, volume]) => ({ date, volume }))
+        .sort((a, b) => parseFr(a.date) - parseFr(b.date));
+
+      // Destroy existing Chart.js instances before redrawing
       ['affiliatesChart', 'volumeChart'].forEach(id => {
         const canvas = document.getElementById(id);
         if (canvas) {
