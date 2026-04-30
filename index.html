@@ -388,39 +388,6 @@
     .lb-rank { width: 50px; }
   }
 
-  .dex-chart-wrap {
-    position: relative;
-    width: 100%;
-    height: 540px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--bg-soft);
-  }
-  .dex-chart-wrap iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 740px;       /* taller than wrapper to hide the bottom Txns/Holders panel */
-    border: 0;
-    display: block;
-    pointer-events: auto;
-  }
-  .dex-chart-actions {
-    margin-top: 24px;
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  @media (max-width: 600px) {
-    .dex-chart-wrap { height: 420px; }
-    .dex-chart-wrap iframe { height: 600px; }
-    .dex-chart-actions { flex-direction: column; align-items: stretch; }
-    .dex-chart-actions .btn-primary,
-    .dex-chart-actions .btn-secondary { justify-content: center; }
-  }
-
   .collab-milestone {
     margin-top: 16px;
     background: var(--ink); color: var(--bg);
@@ -1101,31 +1068,6 @@
       <div class="leaderboard-disclaimer">
         Identifiers are partially masked. No personal data collected. Rankings update every 15 minutes.
       </div>
-    </div>
-  </div>
-</section>
-
-<section id="chart" style="border-top: 1px solid var(--line);">
-  <div class="container">
-    <div class="section-header">
-      <span class="section-tag">IMO live chart</span>
-      <h2>Real time price.<br><span class="muted">Powered by DexScreener.</span></h2>
-      <p class="section-lead">Track the IMO/WETH pair on Base in real time. Every burn reduces supply, putting upward pressure on price over time.</p>
-    </div>
-    <div class="dex-chart-wrap">
-      <iframe
-        src="https://dexscreener.com/base/0x007bb7a4bfc214df06474e39142288e99540f2b3?embed=1&theme=light&info=0"
-        title="IMO live chart on DexScreener"
-        loading="lazy"
-        allowfullscreen></iframe>
-    </div>
-    <div class="dex-chart-actions">
-      <a href="https://dexscreener.com/base/0x007bb7a4bfc214df06474e39142288e99540f2b3" target="_blank" rel="noopener" class="btn-secondary">
-        Open on DexScreener ↗
-      </a>
-      <a href="https://app.uniswap.org/swap?chain=base&inputCurrency=NATIVE&outputCurrency=0x5a7a2bf9ffae199f088b25837dcd7e115cf8e1bb" target="_blank" rel="noopener" class="btn-primary">
-        Buy IMO on Uniswap →
-      </a>
     </div>
   </div>
 </section>
