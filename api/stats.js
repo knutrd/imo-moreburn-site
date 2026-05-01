@@ -7,7 +7,7 @@
 import { put } from '@vercel/blob';
 import { callWeex, countAffiliates, aggregatePerUser } from './_weex.js';
 
-const COMMISSION_RATE = 0.0006 * 0.75;  // futures fee 0.06% × 75% rebate
+const COMMISSION_RATE = 0.0007088 * 0.75;  // observed WEEX fee 0.0709% × 75% rebate = 0.0531% to us
 
 // ---------- Daily snapshot to Blob ----------
 
