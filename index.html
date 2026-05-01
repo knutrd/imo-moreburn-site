@@ -374,8 +374,17 @@
   .lb-rank-medal.silver { background: #e8e8e8; color: #4a4a4a; }
   .lb-rank-medal.bronze { background: #f0dac8; color: #6b3a1d; }
   .lb-uid {
+    color: var(--ink-soft);
+  }
+  .lb-uid-mono {
     font-family: var(--mono);
     color: var(--ink-soft);
+  }
+  .lb-name {
+    font-family: var(--font-sans, inherit);
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
   .lb-vol {
     text-align: right;
@@ -1505,15 +1514,25 @@
       const medalClass = (rank) => rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
       const formatVol = (v) => '$' + v.toLocaleString('en-US');
 
-      tbody.innerHTML = json.top.map(t => `
-        <tr>
-          <td class="lb-rank">
-            <span class="lb-rank-medal ${medalClass(t.rank)}">${t.rank}</span>
-          </td>
-          <td class="lb-uid">${t.uidMasked}</td>
-          <td class="lb-vol">${formatVol(t.totalVolume)}</td>
-        </tr>
-      `).join('');
+      // Escape HTML to be safe with custom labels
+      const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+
+      tbody.innerHTML = json.top.map(t => {
+        const traderName = t.identified
+          ? `<span class="lb-name">${escapeHtml(t.label)}</span>`
+          : `<span class="lb-uid-mono">${escapeHtml(t.uidMasked)}</span>`;
+        return `
+          <tr>
+            <td class="lb-rank">
+              <span class="lb-rank-medal ${medalClass(t.rank)}">${t.rank}</span>
+            </td>
+            <td class="lb-uid">${traderName}</td>
+            <td class="lb-vol">${formatVol(t.totalVolume)}</td>
+          </tr>
+        `;
+      }).join('');
     } catch (err) {
       console.warn('Leaderboard unavailable.', err);
       tbody.innerHTML = '<tr><td colspan="3" class="lb-empty">Leaderboard temporarily unavailable.</td></tr>';
