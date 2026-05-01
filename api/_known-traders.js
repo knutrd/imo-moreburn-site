@@ -9,6 +9,5 @@
 // ============================================================
 
 export const KNOWN_TRADERS = {
-  // Add the full UID and the label you want to display:
-  // 'XXXXXXXXXX': 'CryptoMillion',
+  '9654489344': 'CryptoMillion',
 };
