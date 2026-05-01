@@ -990,7 +990,7 @@
           <div class="collab-stat">
             <div class="collab-stat-label">Awaiting burn</div>
             <div class="collab-stat-value" data-bind="weex.commissionsPending">$0</div>
-            <div class="collab-stat-sub">&ge;50% will be burned <span class="estimation-tag" title="Estimation based on observed WEEX fee rate (0.0531% after rebate). Actual commission paid by WEEX may differ slightly.">est.</span></div>
+            <div class="collab-stat-sub">&ge;50% will be burned <span class="estimation-tag" id="estimationTag" title="Estimation based on observed WEEX fee rate. Actual commission paid by WEEX may differ slightly.">est.</span></div>
           </div>
           <div class="collab-stat">
             <div class="collab-stat-label">IMO already burned</div>
@@ -1413,7 +1413,18 @@
       //
       // If no burn has happened yet, awaiting = total_commissions (full volume).
       const data = window.SITE_DATA || {};
-      const COMMISSION_RATE = 0.0007088 * 0.75;  // observed WEEX fee 0.0709% × 75% rebate
+      // Use the rate provided by the API (configurable via Vercel env var).
+      // Falls back to a sensible default if the field is missing.
+      const COMMISSION_RATE = (typeof json.commissionRate === 'number' && json.commissionRate > 0)
+        ? json.commissionRate
+        : (0.000471 * 0.75);
+
+      // Update the tooltip on the "est." badge with the current rate
+      const estTag = document.getElementById('estimationTag');
+      if (estTag) {
+        const ratePct = (COMMISSION_RATE * 100).toFixed(4);
+        estTag.title = `Estimation based on observed WEEX fee rate (${ratePct}% after rebate). Actual commission paid by WEEX may differ slightly.`;
+      }
 
       // Parse the live total volume "$562,997" into a number
       const liveVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
