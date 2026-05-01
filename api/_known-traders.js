@@ -1,0 +1,14 @@
+// ============================================================
+//  /api/_known-traders.js
+//  Maps WEEX UIDs to public-facing labels for the leaderboard.
+//
+//  Only add a UID here if the trader has explicitly consented to
+//  being identified publicly on the leaderboard.
+//
+//  Format: 'UID': 'PublicLabel'
+// ============================================================
+
+export const KNOWN_TRADERS = {
+  // Add the full UID and the label you want to display:
+  // 'XXXXXXXXXX': 'CryptoMillion',
+};
