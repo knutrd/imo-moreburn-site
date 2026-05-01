@@ -289,6 +289,21 @@
     letter-spacing: -0.01em; line-height: 1;
   }
   .collab-stat-sub { font-size: 0.82rem; color: var(--ink-muted); margin-top: 6px; }
+  .estimation-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--ink-muted);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+    cursor: help;
+    vertical-align: middle;
+  }
   .collab-fees {
     background: var(--bg-soft); border: 1px solid var(--line);
     border-radius: 10px; padding: 20px 24px;
@@ -968,7 +983,7 @@
           <div class="collab-stat">
             <div class="collab-stat-label">Awaiting burn</div>
             <div class="collab-stat-value" data-bind="weex.commissionsPending">$0</div>
-            <div class="collab-stat-sub">&ge;50% will be burned</div>
+            <div class="collab-stat-sub">&ge;50% will be burned <span class="estimation-tag" title="Estimation based on observed WEEX fee rate (0.0531% after rebate). Actual commission paid by WEEX may differ slightly.">est.</span></div>
           </div>
           <div class="collab-stat">
             <div class="collab-stat-label">IMO already burned</div>
@@ -1391,7 +1406,7 @@
       //
       // If no burn has happened yet, awaiting = total_commissions (full volume).
       const data = window.SITE_DATA || {};
-      const COMMISSION_RATE = 0.0006 * 0.75;  // 0.06% trading fee × 75% rebate
+      const COMMISSION_RATE = 0.0007088 * 0.75;  // observed WEEX fee 0.0709% × 75% rebate
 
       // Parse the live total volume "$562,997" into a number
       const liveVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
