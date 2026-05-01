@@ -7,7 +7,10 @@
 import { put } from '@vercel/blob';
 import { callWeex, countAffiliates, aggregatePerUser } from './_weex.js';
 
-const COMMISSION_RATE = 0.0007088 * 0.75;  // observed WEEX fee 0.0709% × 75% rebate = 0.0531% to us
+// Commission rate: configurable via Vercel env var COMMISSION_RATE
+// (decimal, e.g. "0.000353" for 0.0353%). Falls back to current observed value.
+// To update: Vercel Dashboard > Settings > Environment Variables.
+const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || (0.000471 * 0.75);
 
 // ---------- Daily snapshot to Blob ----------
 
@@ -118,6 +121,7 @@ export default async function handler(req, res) {
         volume48h: '$' + Math.round(totalVolume).toLocaleString('en-US'),
         commissionsPending: '$' + (totalVolume * COMMISSION_RATE).toFixed(2),
       },
+      commissionRate: COMMISSION_RATE,
       snapshot
     });
   } catch (err) {
