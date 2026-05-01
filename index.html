@@ -1383,25 +1383,35 @@
 
       const live = json.weex;
 
-      // Compute "Awaiting burn" = total commissions minus everything already burned.
-      // Burns are listed in data.js > burns[] with a `usdAmount` field.
+      // ----- Compute "Awaiting burn" -----
+      // Logic: each burn "resets" the counter. We only count commissions
+      // generated AFTER the most recent burn.
+      //
+      //   awaiting = (current_total_volume - volumeAtBurn_of_last_burn) × 0.06% × 75%
+      //
+      // If no burn has happened yet, awaiting = total_commissions (full volume).
       const data = window.SITE_DATA || {};
-      const totalBurnedUsd = (data.burns || []).reduce((sum, b) => {
-        const v = typeof b.usdAmount === 'number' ? b.usdAmount : parseFloat(b.usdAmount) || 0;
-        return sum + v;
-      }, 0);
+      const COMMISSION_RATE = 0.0006 * 0.75;  // 0.06% trading fee × 75% rebate
 
-      // Parse the live "$125.40" string into a number, subtract burned, format back as $X.XX
-      let awaitingDisplay = live.commissionsPending;
-      if (typeof live.commissionsPending === 'string') {
-        const parsed = parseFloat(live.commissionsPending.replace(/[^0-9.\-]/g, ''));
-        if (!Number.isNaN(parsed)) {
-          const remaining = Math.max(0, parsed - totalBurnedUsd);
-          awaitingDisplay = '$' + remaining.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          });
-        }
+      // Parse the live total volume "$562,997" into a number
+      const liveVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
+
+      // Find the most recent burn (latest volumeAtBurn)
+      const burns = data.burns || [];
+      let lastVolumeAtBurn = 0;
+      burns.forEach(b => {
+        const v = typeof b.volumeAtBurn === 'number' ? b.volumeAtBurn : parseFloat(b.volumeAtBurn) || 0;
+        if (v > lastVolumeAtBurn) lastVolumeAtBurn = v;
+      });
+
+      let awaitingDisplay = live.commissionsPending;  // fallback to API value
+      if (Number.isFinite(liveVolume)) {
+        const volumeSinceLastBurn = Math.max(0, liveVolume - lastVolumeAtBurn);
+        const awaiting = volumeSinceLastBurn * COMMISSION_RATE;
+        awaitingDisplay = '$' + awaiting.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
       }
 
       const map = {

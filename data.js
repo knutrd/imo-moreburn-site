@@ -121,6 +121,7 @@ window.SITE_DATA = {
       date: "30/04/2026",
       amount: "2,083 IMO",
       usdAmount: 1000,
+      volumeAtBurn: 324449,                 // total cumulative volume at burn time (resets the "Awaiting burn" counter)
       txTotalAmount: "74,123 IMO",
       txHash: "0x014d6358...91d733ae",
       txUrl: "https://basescan.org/tx/0x014d635853f3284b246f2d0f642477419c1e2cb89ae5365ca7a7b36091d733ae",
@@ -132,6 +133,7 @@ window.SITE_DATA = {
     //   date: "15/05/2026",                  // DD/MM/YYYY
     //   amount: "5,230 IMO",                 // share burned via WEEX fees (shown in chart)
     //   usdAmount: 487,                      // dollar value of "amount" at burn time (number, no $)
+    //   volumeAtBurn: 850000,                // total cumulative WEEX volume at burn time (read from the live site before burning)
     //   txTotalAmount: "12,500 IMO",         // optional: full burn in this tx (WEEX + real estate + ...)
     //   txHash: "0xabc123...def456",         // short hash for display
     //   txUrl: "https://basescan.org/tx/0xabc123def456",
