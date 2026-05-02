@@ -10,4 +10,7 @@
 
 export const KNOWN_TRADERS = {
   '9654489344': 'CryptoMillion',
+  '4273045106': 'GregPssn',
+  '5120027874': 'bull',
+  '6876044501': 'DavidCrypto',
 };
