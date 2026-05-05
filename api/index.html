@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IMO MoreBurn · A share of WEEX fees buys and burns IMO.</title>
+<meta name="description" content="" />
+
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
+
+<!-- Open Graph (Facebook, LinkedIn, Telegram, WhatsApp, Discord, iMessage...) -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.imo-moreburn.com/" />
+<meta property="og:title" content="A share of WEEX fees buys and burns IMO" />
+<meta property="og:description" content="" />
+<meta property="og:image" content="https://www.imo-moreburn.com/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="IMO MoreBurn: A share of WEEX fees buys and burns IMO" />
+<meta property="og:site_name" content="IMO MoreBurn" />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter Card (renders as a large summary card) -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content="https://www.imo-moreburn.com/" />
+<meta name="twitter:title" content="A share of WEEX fees buys and burns IMO" />
+<meta name="twitter:description" content="" />
+<meta name="twitter:image" content="https://www.imo-moreburn.com/og-image.png" />
+<meta name="twitter:image:alt" content="IMO MoreBurn" />
+
+<!-- Theme color (browser chrome on mobile) -->
+<meta name="theme-color" content="#ffffff" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #fafaf8;
+    --bg-card: #f5f5f1;
+    --ink: #0a0a0a;
+    --ink-soft: #4a4a4a;
+    --ink-muted: #8a8a8a;
+    --accent: #1a1a1a;
+    --line: rgba(10, 10, 10, 0.08);
+    --line-strong: rgba(10, 10, 10, 0.16);
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 18px 0; z-index: 100;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; }
+  .logo {
+    font-weight: 600; font-size: 1.1rem; letter-spacing: -0.02em;
+    color: var(--ink); text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #0a0a0a;
+  }
+  .logo-mark img { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .nav-links { display: flex; gap: 32px; align-items: center; list-style: none; }
+  .nav-links a {
+    color: var(--ink-soft); text-decoration: none;
+    font-size: 0.92rem; font-weight: 400; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    padding: 9px 20px; background: var(--ink); color: #ffffff !important;
+    border-radius: 6px; font-weight: 500; font-size: 0.88rem;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover { background: #2a2a2a; color: #ffffff !important; }
+  .menu-toggle { display: none; }
+
+  .hero {
+    min-height: 92vh; display: flex; align-items: center;
+    padding: 140px 0 100px; position: relative;
+  }
+  .hero-content { max-width: 880px; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 14px; border: 1px solid var(--line-strong);
+    border-radius: 999px; font-size: 0.78rem; font-weight: 500;
+    color: var(--ink-soft); margin-bottom: 36px;
+    font-family: var(--mono); letter-spacing: 0.02em;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--ink); border-radius: 50%;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(2rem, 4.8vw, 3.8rem);
+    line-height: 1.05; letter-spacing: -0.035em;
+    margin-bottom: 32px;
+  }
+  h1 .muted { color: var(--ink-muted); font-weight: 600; }
+  .hero-lead {
+    font-size: 1.15rem; color: var(--ink-soft);
+    max-width: 620px; margin-bottom: 44px; line-height: 1.55;
+  }
+  .hero-cta { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 26px; background: var(--ink); color: var(--bg);
+    text-decoration: none; border-radius: 8px;
+    font-weight: 500; font-size: 0.96rem; transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #2a2a2a; transform: translateY(-1px); }
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 22px; color: var(--ink); text-decoration: none;
+    border: 1px solid var(--line-strong); border-radius: 8px;
+    font-weight: 500; font-size: 0.96rem;
+    transition: all 0.2s; background: var(--bg);
+  }
+  .btn-secondary:hover { border-color: var(--ink); background: var(--bg-soft); }
+
+  .metrics {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 60px 0; background: var(--bg-soft);
+  }
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .metric { border-left: 1px solid var(--line); padding-left: 24px; }
+  .metric:first-child { border-left: none; padding-left: 0; }
+  .metric-label {
+    font-family: var(--mono); font-size: 0.74rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 12px;
+  }
+  .metric-value {
+    font-size: 2rem; font-weight: 500;
+    letter-spacing: -0.02em; color: var(--ink); line-height: 1;
+  }
+  .metric-sub { font-size: 0.84rem; color: var(--ink-muted); margin-top: 8px; }
+
+  section { padding: 120px 0; position: relative; }
+  .section-header { margin-bottom: 60px; max-width: 720px; }
+  .section-tag {
+    display: inline-block; font-family: var(--mono);
+    font-size: 0.78rem; color: var(--ink-muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 20px;
+  }
+  h2 {
+    font-weight: 700; font-size: clamp(1.6rem, 3.2vw, 2.5rem);
+    line-height: 1.1; letter-spacing: -0.025em; margin-bottom: 20px;
+  }
+  h2 .muted { color: var(--ink-muted); font-weight: 600; }
+  .section-lead { font-size: 1.08rem; color: var(--ink-soft); max-width: 600px; }
+
+  .concept-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden; background: var(--bg);
+  }
+  .concept-card {
+    padding: 40px 32px; border-right: 1px solid var(--line);
+    transition: background 0.2s;
+  }
+  .concept-card:last-child { border-right: none; }
+  .concept-card:hover { background: var(--bg-soft); }
+  .concept-num {
+    font-family: var(--mono); font-size: 0.82rem;
+    color: var(--ink-muted); margin-bottom: 32px; letter-spacing: 0.04em;
+  }
+  .concept-head {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .concept-icon { width: 32px; height: 32px; color: var(--ink); flex-shrink: 0; }
+  .concept-card h3 {
+    font-weight: 500; font-size: 1.3rem;
+    margin: 0; letter-spacing: -0.01em;
+  }
+  .concept-card p { color: var(--ink-soft); line-height: 1.6; font-size: 0.95rem; }
+
+  .how-section {
+    background: var(--bg-soft);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+  .steps-list { list-style: none; }
+  .step {
+    padding: 24px 0; border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: 50px 1fr; gap: 16px; align-items: start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-muted); padding-top: 4px; }
+  .step-content h4 { font-weight: 500; font-size: 1.12rem; margin-bottom: 6px; }
+  .step-content p { color: var(--ink-soft); font-size: 0.94rem; }
+  .step-content code {
+    font-family: var(--mono); background: var(--bg);
+    padding: 2px 8px; border-radius: 4px;
+    border: 1px solid var(--line); font-size: 0.86rem;
+  }
+  .flow-diagram {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 12px; padding: 40px 32px;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
+  }
+  .flow-step {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 18px; background: var(--bg-soft);
+    border: 1px solid var(--line); border-radius: 8px; font-size: 0.92rem;
+  }
+  .flow-step .label {
+    font-family: var(--mono); font-size: 0.74rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; min-width: 60px;
+  }
+  .flow-step .name { font-weight: 500; }
+  .flow-arrow { height: 32px; display: flex; justify-content: center; align-items: center; color: var(--ink-muted); }
+  .flow-step.highlight { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .flow-step.highlight .label { color: rgba(255,255,255,0.6); }
+
+  .collab-section { padding: 120px 0; }
+  .collab-card {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 16px; overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1.4fr;
+  }
+  .collab-left {
+    padding: 48px 40px; background: var(--bg-soft);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .collab-brand { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+  .collab-logo {
+    width: 56px; height: 56px; background: var(--ink);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-weight: 600; font-size: 1.25rem; letter-spacing: -0.02em;
+  }
+  .collab-name { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  .collab-since { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-muted); margin-top: 4px; }
+  .collab-desc { color: var(--ink-soft); font-size: 0.96rem; line-height: 1.6; margin-bottom: 32px; }
+  .collab-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; background: var(--ink); color: var(--bg);
+    text-decoration: none; border-radius: 8px;
+    font-weight: 500; font-size: 0.92rem;
+    transition: all 0.2s; align-self: flex-start;
+  }
+  .collab-cta:hover { background: #2a2a2a; transform: translateY(-1px); }
+  .collab-right {
+    padding: 48px 40px; display: flex;
+    flex-direction: column; justify-content: space-between; gap: 28px;
+  }
+  .collab-stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px 24px; }
+  .collab-stat { border-top: 1px solid var(--line); padding-top: 20px; }
+  .collab-stat-label {
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 10px;
+  }
+  .collab-stat-value {
+    font-size: 1.7rem; font-weight: 500; color: var(--ink);
+    letter-spacing: -0.01em; line-height: 1;
+  }
+  .collab-stat-sub { font-size: 0.82rem; color: var(--ink-muted); margin-top: 6px; }
+  .estimation-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--ink-muted);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+    cursor: help;
+    vertical-align: middle;
+  }
+  .collab-fees {
+    background: var(--bg-soft); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 24px;
+  }
+  .collab-fees-title {
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+  .fee-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 0.94rem; }
+  .fee-row + .fee-row { border-top: 1px solid var(--line); }
+  .fee-label { color: var(--ink-soft); }
+  .fee-value { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+
+  .leaderboard-wrap {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 32px;
+  }
+  .leaderboard-table-wrap {
+    margin-top: 20px;
+    overflow-x: auto;
+  }
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .leaderboard-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+  }
+  .leaderboard-table th.lb-vol { text-align: right; }
+  .leaderboard-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.94rem;
+  }
+  .leaderboard-table tr:last-child td { border-bottom: none; }
+  .leaderboard-table tr:hover td { background: var(--bg-soft); }
+  .lb-rank {
+    width: 70px;
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .lb-rank-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-right: 4px;
+    background: var(--bg-soft);
+    color: var(--ink);
+  }
+  .lb-rank-medal.gold   { background: #f5e9c8; color: #6b5018; }
+  .lb-rank-medal.silver { background: #e8e8e8; color: #4a4a4a; }
+  .lb-rank-medal.bronze { background: #f0dac8; color: #6b3a1d; }
+  .lb-uid {
+    color: var(--ink-soft);
+  }
+  .lb-uid-mono {
+    font-family: var(--mono);
+    color: var(--ink-soft);
+  }
+  .lb-name {
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+  .lb-vol {
+    text-align: right;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .lb-loading,
+  .lb-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+  }
+  .leaderboard-disclaimer {
+    margin-top: 16px;
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+  @media (max-width: 600px) {
+    .leaderboard-wrap { padding: 24px 20px; }
+    .leaderboard-table th,
+    .leaderboard-table td { padding: 12px 10px; font-size: 0.86rem; }
+    .lb-rank { width: 50px; }
+  }
+
+  .collab-milestone {
+    margin-top: 16px;
+    background: var(--ink); color: var(--bg);
+    border-radius: 10px; padding: 18px 22px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .milestone-icon {
+    flex-shrink: 0; width: 36px; height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg);
+  }
+  .milestone-content { flex: 1; min-width: 0; }
+  .milestone-title {
+    font-size: 0.94rem; font-weight: 600;
+    letter-spacing: -0.01em; margin-bottom: 4px;
+    color: var(--bg);
+  }
+  .milestone-text {
+    font-size: 0.84rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+  }
+
+  .burns-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 50px; flex-wrap: wrap; gap: 24px;
+  }
+  .burns-stats { display: flex; gap: 32px; }
+  .burn-stat { text-align: right; }
+  .burn-stat-value { font-size: 1.6rem; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
+  .burn-stat-label {
+    font-family: var(--mono); font-size: 0.74rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-top: 4px;
+  }
+  .burns-table-wrap {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+  }
+  .burns-note {
+    padding: 14px 24px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--line);
+    font-size: 0.84rem;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+  .burns-table { width: 100%; border-collapse: collapse; }
+  .burns-table thead { background: var(--bg-soft); }
+  .burns-table th {
+    text-align: left; padding: 16px 24px;
+    font-family: var(--mono); font-size: 0.74rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-muted); font-weight: 500;
+    border-bottom: 1px solid var(--line);
+  }
+  .burns-table td {
+    padding: 20px 24px; border-bottom: 1px solid var(--line);
+    font-size: 0.92rem; color: var(--ink-soft); vertical-align: middle;
+  }
+  .burns-table tr:last-child td { border-bottom: none; }
+  .burns-table tr:hover td { background: var(--bg-soft); }
+  .burn-amount { font-family: var(--mono); color: var(--ink); font-weight: 500; }
+  .burn-amount-sub {
+    font-family: var(--mono); font-size: 0.78rem;
+    color: var(--ink-muted); margin-top: 4px;
+  }
+  .burn-tag {
+    display: inline-block; padding: 3px 10px;
+    background: var(--ink); color: var(--bg); border-radius: 4px;
+    font-size: 0.74rem; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .burn-tag.add { background: var(--bg-card); color: var(--ink); border: 1px solid var(--line); }
+  .tx-link { font-family: var(--mono); color: var(--ink-muted); text-decoration: none; font-size: 0.84rem; transition: color 0.2s; }
+  .tx-link:hover { color: var(--ink); }
+  .empty-state { padding: 60px 24px; text-align: center; color: var(--ink-muted); }
+  .empty-state p { font-size: 0.94rem; line-height: 1.6; }
+
+  /* ==================== BURN CHART ==================== */
+  .chart-wrap {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  .chart-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
+  }
+  .chart-title {
+    font-family: var(--mono); font-size: 0.74rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 6px;
+  }
+  .chart-subtitle { font-size: 0.96rem; color: var(--ink); font-weight: 500; }
+  .chart-total { text-align: right; }
+  .chart-total-value {
+    font-size: 1.6rem; font-weight: 500;
+    color: var(--ink); letter-spacing: -0.01em; line-height: 1;
+  }
+  .chart-total-label {
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-top: 4px;
+  }
+  .chart-canvas-wrap {
+    position: relative; height: 280px;
+    margin-top: 8px;
+  }
+  .chart-empty {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; flex-direction: column; gap: 8px;
+    color: var(--ink-muted); text-align: center;
+  }
+  .chart-empty-icon { opacity: 0.3; }
+  .chart-empty p { font-size: 0.9rem; line-height: 1.5; }
+
+  .cta-section {
+    padding: 120px 0; background: var(--ink);
+    color: var(--bg); text-align: center;
+  }
+  .cta-section h2 { color: var(--bg); margin: 0 auto 20px; max-width: 700px; }
+  .cta-section h2 .muted { color: rgba(255,255,255,0.5); }
+  .cta-section .section-lead { color: rgba(255,255,255,0.7); margin: 0 auto 36px; }
+  .cta-section .btn-primary { background: var(--bg); color: var(--ink); }
+  .cta-section .btn-primary:hover { background: #f0f0f0; }
+
+  .faq-grid { max-width: 820px; }
+  .faq-item { border-bottom: 1px solid var(--line); padding: 24px 0; }
+  .faq-question {
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; font-size: 1.08rem; font-weight: 500;
+    letter-spacing: -0.01em; user-select: none; gap: 24px;
+  }
+  .faq-question:hover { color: var(--ink-soft); }
+  .faq-toggle {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s; font-size: 0.9rem; color: var(--ink);
+  }
+  .faq-item.open .faq-toggle {
+    transform: rotate(45deg); background: var(--ink);
+    color: var(--bg); border-color: var(--ink);
+  }
+  .faq-answer {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    color: var(--ink-soft); line-height: 1.65; font-size: 0.96rem;
+  }
+  .faq-item.open .faq-answer { max-height: 400px; padding-top: 16px; }
+  .faq-answer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  footer { padding: 60px 0 32px; background: var(--bg-soft); border-top: 1px solid var(--line); }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+  .footer-about p { color: var(--ink-soft); margin-top: 14px; max-width: 380px; font-size: 0.92rem; }
+  .footer-col h5 {
+    font-family: var(--mono); font-size: 0.74rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-muted); margin-bottom: 16px; font-weight: 500;
+  }
+  .footer-col a {
+    display: block; color: var(--ink-soft); text-decoration: none;
+    font-size: 0.92rem; margin-bottom: 10px; transition: color 0.2s;
+  }
+  .footer-col a:hover { color: var(--ink); }
+  .footer-bottom {
+    padding-top: 28px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px; color: var(--ink-muted); font-size: 0.84rem;
+  }
+  .disclaimer {
+    margin-top: 20px; padding: 16px 20px;
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; color: var(--ink-muted);
+    font-size: 0.82rem; line-height: 1.6;
+  }
+
+  /* ==================== RESPONSIVE ==================== */
+  /* Tablet & small desktop */
+  @media (max-width: 920px) {
+    .container { padding: 0 24px; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; }
+    .metric { border-left: none; padding-left: 0; }
+    .metric:nth-child(3) { border-top: 1px solid var(--line); padding-top: 28px; }
+    .metric:nth-child(4) { border-top: 1px solid var(--line); padding-top: 28px; }
+    .concept-grid { grid-template-columns: 1fr; }
+    .concept-card { border-right: none; border-bottom: 1px solid var(--line); }
+    .concept-card:last-child { border-bottom: none; }
+    .how-grid { grid-template-columns: 1fr; gap: 40px; }
+    .collab-card { grid-template-columns: 1fr; }
+    .collab-left { border-right: none; border-bottom: 1px solid var(--line); }
+    .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    .nav-links { display: none; }
+    .menu-toggle {
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: 1px solid var(--line-strong); color: var(--ink);
+      width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+      font-size: 1.2rem;
+    }
+    .nav-links.open {
+      display: flex; flex-direction: column; position: absolute;
+      top: 100%; left: 0; right: 0; background: var(--bg);
+      padding: 20px 24px; border-bottom: 1px solid var(--line);
+      gap: 4px; align-items: stretch;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .nav-links.open li { width: 100%; }
+    .nav-links.open a {
+      display: block; padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 1rem;
+    }
+    .nav-links.open li:last-child a { border-bottom: none; }
+    .nav-links.open .nav-cta {
+      margin-top: 8px; text-align: center;
+      border-bottom: none; padding: 14px 20px;
+    }
+    .burns-header { flex-direction: column; align-items: flex-start; }
+    .burns-stats { width: 100%; justify-content: flex-start; }
+    .burn-stat { text-align: left; }
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    .container { padding: 0 20px; }
+    section { padding: 64px 0; }
+    .hero { padding: 110px 0 64px; min-height: auto; }
+    .hero-eyebrow { margin-bottom: 24px; }
+    h1 { margin-bottom: 24px; }
+    .hero-lead { font-size: 1rem; margin-bottom: 32px; }
+    .section-header { margin-bottom: 40px; }
+    h2 { margin-bottom: 16px; }
+    .section-lead { font-size: 1rem; }
+
+    /* Metrics: stack on 1 column for max readability */
+    .metrics { padding: 40px 0 !important; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 24px 16px; }
+    .metric-value { font-size: 1.7rem; }
+    .metric-label { font-size: 0.7rem; }
+    .metric-sub { font-size: 0.78rem; }
+
+    /* Concept cards: tighter padding */
+    .concept-card { padding: 32px 24px; }
+    .concept-num { margin-bottom: 24px; }
+    .concept-icon { width: 28px; height: 28px; }
+    .concept-head { gap: 12px; margin-bottom: 14px; }
+    .concept-card h3 { font-size: 1.2rem; }
+    .concept-card p { font-size: 0.92rem; }
+
+    /* CTAs stack vertically */
+    .hero-cta { flex-direction: column; align-items: stretch; gap: 12px; }
+    .btn-primary, .btn-secondary { justify-content: center; padding: 15px 22px; }
+
+    /* WEEX collab card: 1 column inside the right panel */
+    .collab-stats-row { grid-template-columns: 1fr 1fr; gap: 20px 16px; }
+    .collab-left, .collab-right { padding: 28px 24px; }
+    .collab-stat-value { font-size: 1.4rem; }
+    .collab-stat-label { font-size: 0.66rem; }
+    .collab-name { font-size: 1.3rem; }
+    .collab-logo { width: 48px; height: 48px; font-size: 1.1rem; }
+    .collab-milestone { padding: 16px 18px; gap: 12px; }
+    .milestone-icon { width: 32px; height: 32px; }
+    .milestone-title { font-size: 0.88rem; }
+    .milestone-text { font-size: 0.8rem; }
+
+    /* Steps */
+    .step { grid-template-columns: 40px 1fr; gap: 12px; padding: 20px 0; }
+    .step-content h4 { font-size: 1.05rem; }
+    .step-content p { font-size: 0.9rem; }
+    .flow-diagram { padding: 28px 22px; }
+    .flow-step { padding: 12px 14px; font-size: 0.88rem; }
+    .flow-step .label { min-width: 50px; font-size: 0.68rem; }
+
+    /* Charts */
+    .chart-wrap { padding: 24px 20px; }
+    .chart-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .chart-total { text-align: left; }
+    .chart-total-value { font-size: 1.5rem; }
+    .chart-canvas-wrap { height: 220px; }
+    .chart-subtitle { font-size: 0.92rem; }
+
+    /* Burns table: hide tx hash + source on small screens */
+    .burns-table th:nth-child(3),
+    .burns-table td:nth-child(3),
+    .burns-table th:nth-child(4),
+    .burns-table td:nth-child(4) { display: none; }
+    .burns-table th, .burns-table td { padding: 14px 16px; font-size: 0.86rem; }
+    .burns-note { padding: 12px 16px; font-size: 0.8rem; }
+
+    /* FAQ */
+    .faq-item { padding: 20px 0; }
+    .faq-question { font-size: 1rem; gap: 16px; }
+
+    /* CTA section */
+    .cta-section { padding: 80px 0; }
+
+    /* Footer */
+    footer { padding: 48px 0 24px; }
+    .footer-grid { gap: 28px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .disclaimer { font-size: 0.78rem; padding: 14px 16px; }
+  }
+
+  /* Small phones (iPhone SE, etc.) */
+  @media (max-width: 380px) {
+    .container { padding: 0 16px; }
+    h1 { font-size: 1.85rem; line-height: 1.1; }
+    h2 { font-size: 1.5rem; }
+    .hero-eyebrow { font-size: 0.7rem; padding: 5px 12px; }
+    .metrics-grid { grid-template-columns: 1fr; gap: 24px; }
+    .collab-stats-row { grid-template-columns: 1fr; }
+    .collab-stat { padding-top: 14px; }
+    .burn-stat-value { font-size: 1.4rem; }
+    .chart-canvas-wrap { height: 200px; }
+    .logo span:not(.logo-mark) { font-size: 0.95rem; }
+  }
+
+  /* Hover states only on devices that support it (avoid sticky hover on mobile) */
+  @media (hover: none) {
+    .btn-primary:hover { transform: none; }
+    .nav-links a:hover { color: var(--ink-soft); }
+    .concept-card:hover { background: transparent; }
+  }
+
+  /* Scroll-triggered fade-in animation for sections */
+  .fade-in {
+    opacity: 0;
+    transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity;
+  }
+  .fade-in.visible {
+    opacity: 1;
+  }
+  /* Respect users who prefer reduced motion (accessibility) */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in {
+      opacity: 1;
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-inner">
+    <a href="#" class="logo" aria-label="MoreBurn">
+      <span class="logo-mark">
+        <img src="imo-logo.png" alt="IMO" />
+      </span>
+      <span>MoreBurn</span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="https://app.uniswap.org/swap?chain=base&inputCurrency=NATIVE&outputCurrency=0x5a7a2bf9ffae199f088b25837dcd7e115cf8e1bb" target="_blank" rel="noopener">Buy IMO</a></li>
+      <li><a href="#weex">Data</a></li>
+      <li><a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener" class="nav-cta">Sign up</a></li>
+    </ul>
+    <button class="menu-toggle" id="menuToggle" aria-label="Menu">≡</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <span class="hero-eyebrow">Buy &amp; Burn · IMO Token</span>
+      <h1>
+        A share of WEEX fees<br>
+        <span class="muted">buys back and burns IMO.</span>
+      </h1>
+      <p class="hero-lead">
+        Sign up on WEEX through our affiliate link and trade as you would anywhere else. WEEX rebates a share of the fees you generate, and part of that commission is used to buy IMO tokens on the market and burn them. Monthly, on chain.
+      </p>
+      <div class="hero-cta">
+        <a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener" class="btn-primary">
+          Sign up on WEEX
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17L17 7M17 7H8M17 7V16"/>
+          </svg>
+        </a>
+        <a href="#how" class="btn-secondary">How it works</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="metrics" style="padding: 60px 0;">
+  <div class="container metrics-grid">
+    <div class="metric">
+      <div class="metric-label">IMO burned</div>
+      <div class="metric-value" data-bind="metrics.totalBurned">0</div>
+      <div class="metric-sub">via WEEX fees</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">USD burned</div>
+      <div class="metric-value" data-bind="metrics.totalUsdBurned">$0</div>
+      <div class="metric-sub">&nbsp;</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">WEEX fees rebated</div>
+      <div class="metric-value" data-bind="metrics.futuresFeeShare">75%</div>
+      <div class="metric-sub">on spot &amp; futures</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Cadence</div>
+      <div class="metric-value" data-bind="metrics.cadence">Monthly</div>
+      <div class="metric-sub">first burn coming up</div>
+    </div>
+  </div>
+</section>
+
+<section id="concept" class="fade-in">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">The concept</span>
+      <h2>Three actors.<br><span class="muted">One single mechanic.</span></h2>
+      <p class="section-lead">
+        You trade on WEEX. WEEX rebates a commission on the fees you generate. Part of that commission buys back IMO tokens and burns them.
+      </p>
+    </div>
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="concept-num">01</div>
+        <div class="concept-head">
+          <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="M7 14l4-4 4 4 5-5"/>
+          </svg>
+          <h3>You trade</h3>
+        </div>
+        <p>Spot or futures, you use WEEX like any other exchange. The code <code style="font-family: var(--mono); font-size: 0.85rem;">vipmillion</code> identifies us as your referrer.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-num">02</div>
+        <div class="concept-head">
+          <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <h3>WEEX rebates</h3>
+        </div>
+        <p>WEEX returns a portion of the fees you pay: up to 75% on both futures and spot trading.</p>
+      </div>
+      <div class="concept-card">
+        <div class="concept-num">03</div>
+        <div class="concept-head">
+          <svg class="concept-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8 12h8"/>
+          </svg>
+          <h3>IMO is burned</h3>
+        </div>
+        <p>At least 50% of the commission (potentially up to 100%) buys IMO tokens on Uniswap (Base) and sends them to a burn address. Forever.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="how-section fade-in">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">How it works</span>
+      <h2>Four steps.<br><span class="muted">Zero friction.</span></h2>
+    </div>
+    <div class="how-grid">
+      <ol class="steps-list">
+        <li class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h4>Click the link</h4>
+            <p>Our WEEX affiliate link redirects you to the official sign up page.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h4>Create your account</h4>
+            <p>Email, password, no KYC. The code <code>vipmillion</code> is applied automatically.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h4>Trade as usual</h4>
+            <p>Spot, futures. Do what you were already doing elsewhere, just on WEEX.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h4>The burn happens</h4>
+            <p>Each month, accumulated commissions are converted into IMO buy &amp; burn. The transaction is published on chain.</p>
+          </div>
+        </li>
+      </ol>
+      <div class="flow-diagram">
+        <div class="flow-step">
+          <span class="label">Step 1</span>
+          <span class="name">You trade on WEEX</span>
+        </div>
+        <div class="flow-arrow">
+          <svg width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3v18M4 15l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="flow-step">
+          <span class="label">Step 2</span>
+          <span class="name">WEEX rebates a share of fees</span>
+        </div>
+        <div class="flow-arrow">
+          <svg width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3v18M4 15l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="flow-step">
+          <span class="label">Step 3</span>
+          <span class="name">IMO bought on Uniswap</span>
+        </div>
+        <div class="flow-arrow">
+          <svg width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3v18M4 15l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="flow-step highlight">
+          <span class="label">Burn</span>
+          <span class="name">IMO destroyed on chain</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="weex" class="collab-section fade-in">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Partnership</span>
+      <h2>WEEX × IMO.<br><span class="muted">The numbers, in clear.</span></h2>
+      <p class="section-lead">
+        Our partnership with WEEX in detail: fee rebate share, accounts signed up through our link, volume traded, amount already burned.
+      </p>
+    </div>
+    <div class="collab-card">
+      <div class="collab-left">
+        <div>
+          <div class="collab-brand">
+            <div class="collab-logo">W</div>
+            <div>
+              <div class="collab-name">WEEX</div>
+              <div class="collab-since" data-bind="weex.sinceDate">Since April 2026</div>
+            </div>
+          </div>
+          <p class="collab-desc">
+            Trade on WEEX using our referral code. At least 50% of the commissions we receive is used to buy back IMO tokens on the market and burn them permanently.
+          </p>
+        </div>
+        <a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener" class="collab-cta">
+          Sign up on WEEX
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17L17 7M17 7H8M17 7V16"/>
+          </svg>
+        </a>
+      </div>
+      <div class="collab-right">
+        <div class="collab-stats-row">
+          <div class="collab-stat">
+            <div class="collab-stat-label">Accounts signed up</div>
+            <div class="collab-stat-value" data-bind="weex.accounts">0</div>
+            <div class="collab-stat-sub">via affiliate link</div>
+          </div>
+          <div class="collab-stat">
+            <div class="collab-stat-label">Total volume</div>
+            <div class="collab-stat-value" data-bind="weex.volume48h">$0</div>
+            <div class="collab-stat-sub">traded via referrals</div>
+          </div>
+          <div class="collab-stat">
+            <div class="collab-stat-label">Awaiting burn</div>
+            <div class="collab-stat-value" data-bind="weex.commissionsPending">$0</div>
+            <div class="collab-stat-sub">&ge;50% will be burned <span class="estimation-tag" id="estimationTag" title="Estimation based on observed WEEX fee rate. Actual commission paid by WEEX may differ slightly.">est.</span></div>
+          </div>
+          <div class="collab-stat">
+            <div class="collab-stat-label">IMO already burned</div>
+            <div class="collab-stat-value" data-bind="weex.imoBurnedViaWeex">0</div>
+            <div class="collab-stat-sub">via this source</div>
+          </div>
+        </div>
+        <div class="collab-fees">
+          <div class="collab-fees-title">Fee share rebated by WEEX</div>
+          <div class="fee-row">
+            <span class="fee-label">Futures fees</span>
+            <span class="fee-value" data-bind="weex.feesFutures">75%</span>
+          </div>
+          <div class="fee-row">
+            <span class="fee-label">Spot fees</span>
+            <span class="fee-value" data-bind="weex.feesSpot">75%</span>
+          </div>
+          <div class="fee-row">
+            <span class="fee-label">Min used for burn</span>
+            <span class="fee-value" data-bind="weex.burnAllocation">50%</span>
+          </div>
+        </div>
+
+        <div class="collab-milestone">
+          <div class="milestone-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 15l-3.5 2 1-4-3-2.5 4-.3L12 6.5l1.5 3.7 4 .3-3 2.5 1 4z"/>
+            </svg>
+          </div>
+          <div class="milestone-content">
+            <div class="milestone-title">Next milestone: free IMO listing on WEEX</div>
+            <div class="milestone-text">Once trading volume thresholds are reached, IMO becomes eligible for a free listing on the exchange. Every trade brings us closer.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-wrap" style="margin-top: 32px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Volume</div>
+          <div class="chart-subtitle">Daily trading volume via referrals</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="volumeTotalValue">$0</div>
+          <div class="chart-total-label">Total cumulative</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="volumeChart"></canvas>
+        <div class="chart-empty" id="volumeEmpty">
+          <svg class="chart-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <p>Volume will be tracked daily.<br>First data point coming soon.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-wrap" style="margin-top: 32px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Growth</div>
+          <div class="chart-subtitle">WEEX accounts over time</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="affiliatesTotalValue">0</div>
+          <div class="chart-total-label">Current accounts</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="affiliatesChart"></canvas>
+        <div class="chart-empty" id="affiliatesEmpty">
+          <svg class="chart-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <p>Account growth will be tracked weekly.<br>First data point coming soon.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="leaderboard-wrap" style="margin-top: 32px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Top traders</div>
+          <div class="chart-subtitle">Anonymous leaderboard, ranked by total volume</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="leaderboardCount">—</div>
+          <div class="chart-total-label">Active traders</div>
+        </div>
+      </div>
+
+      <div class="leaderboard-table-wrap">
+        <table class="leaderboard-table" id="leaderboardTable">
+          <thead>
+            <tr>
+              <th class="lb-rank">Rank</th>
+              <th class="lb-uid">Trader</th>
+              <th class="lb-vol">Total volume</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr><td colspan="3" class="lb-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="leaderboard-disclaimer">
+        Identifiers are partially masked. No personal data collected. Rankings update every 15 minutes.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="burns" class="fade-in" style="background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+  <div class="container">
+    <div class="burns-header">
+      <div>
+        <span class="section-tag">Burn registry</span>
+        <h2>Every burn,<br><span class="muted">verifiable on chain.</span></h2>
+      </div>
+      <div class="burns-stats">
+        <div class="burn-stat">
+          <div class="burn-stat-value" id="burnsCount">0</div>
+          <div class="burn-stat-label">Total burns</div>
+        </div>
+        <div class="burn-stat">
+          <div class="burn-stat-value">Base</div>
+          <div class="burn-stat-label">Network</div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Cumulative evolution</div>
+          <div class="chart-subtitle">IMO burned via WEEX fees</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="chartTotalValue">0</div>
+          <div class="chart-total-label">Total to date</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="burnChart"></canvas>
+        <div class="chart-empty" id="chartEmpty">
+          <svg class="chart-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="M7 16l4-4 4 4 5-5"/>
+          </svg>
+          <p>The chart will build up as burns happen.<br>First data point coming soon.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="burns-table-wrap">
+      <div class="burns-note">
+        Each on-chain transaction may include other burn sources (real estate revenues, ecosystem surplus). The amount shown below is the WEEX share only, the part this site tracks.
+      </div>
+      <table class="burns-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>WEEX share</th>
+            <th>Tx Hash</th>
+            <th>Source</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody id="burnsTableBody">
+          <tr>
+            <td colspan="5" class="empty-state">
+              <p>
+                First burn scheduled after the first commission cycle.<br>
+                Sign up on WEEX and trade to fill the pool.
+              </p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section fade-in">
+  <div class="container">
+    <span class="section-tag" style="color: rgba(255,255,255,0.6);">Join the movement</span>
+    <h2>You were trading anyway.<br><span class="muted">Might as well make it count.</span></h2>
+    <p class="section-lead">
+      Every trade executed on WEEX through our link reduces, over time, the circulating supply of IMO.
+    </p>
+    <a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener" class="btn-primary" style="font-size: 1rem; padding: 16px 30px;">
+      Sign up on WEEX
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 17L17 7M17 7H8M17 7V16"/>
+      </svg>
+    </a>
+  </div>
+</section>
+
+<section id="faq" class="fade-in">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Frequently asked questions</span>
+      <h2>Everything you need.<br><span class="muted">Before getting started.</span></h2>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Why WEEX and not another exchange?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>WEEX offers one of the most generous affiliate programs on the market, with up to 75% of fees rebated to the referrer on both spot and futures trading. The higher the rebate, the larger the IMO burn. The platform is also known for tight spreads.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>What does "free IMO listing on WEEX" mean?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>WEEX, like most exchanges, normally charges a listing fee to add a new token to its marketplace. As part of their affiliate ecosystem, exchanges sometimes waive this fee for tokens that bring meaningful trading volume to the platform. Our goal is to reach those volume thresholds together so that IMO can be listed for free, opening up additional liquidity and visibility for the token. This is a target, not a guarantee, and depends on WEEX's internal listing criteria.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Why does the tx amount differ from the WEEX share?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>Burn transactions on chain may bundle several sources into a single tx for efficiency: WEEX affiliate fees (this site), real estate revenues from the IMO Invest ecosystem, and other surpluses. The amount displayed in the registry above is the WEEX share only, the part that comes from the trading fees you generated. The total transaction amount may be larger.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>How often are burns executed?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>The goal is a monthly burn aggregating the commissions accumulated over the period. Depending on volume, cadence may move to weekly. Every transaction is published in the registry above with its hash.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>What share is exactly burned?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>Part of the affiliate commissions received from WEEX is dedicated to buying back and burning IMO on Uniswap (Base). The rest covers operational expenses and the margin required to keep the program running. Burn amounts and each transaction are published in the registry, verifiable on chain.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>What is the IMO token?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>IMO is a deflationary token linked to a Swiss real estate investment project on blockchain. The project's core mechanism already runs on a buy &amp; burn model based on rental income. More info at <a href="https://www.imo-invest.com/" target="_blank" rel="noopener">imo-invest.com</a>. This program adds to that native mechanism.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Is there any risk?</span>
+          <span class="faq-toggle">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>Crypto trading involves the risk of capital loss. This site does not provide investment advice. The burn mechanism depends on WEEX's affiliate program and may evolve. Trade responsibly and according to your risk profile.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-about">
+        <a href="#" class="logo" aria-label="MoreBurn">
+          <span class="logo-mark">
+            <img src="imo-logo.png" alt="IMO" />
+          </span>
+          <span>MoreBurn</span>
+        </a>
+        <p>A simple program: a share of the fees you generate on WEEX is used to buy back and burn IMO tokens.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Navigation</h5>
+        <a href="#concept">Concept</a>
+        <a href="#how">How it works</a>
+        <a href="#weex">WEEX</a>
+        <a href="#burns">Burn registry</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="footer-col">
+        <h5>IMO community</h5>
+        <a href="https://www.imo-invest.com/" target="_blank" rel="noopener">IMO Invest website</a>
+        <a href="#" target="_blank" rel="noopener" data-bind-href="socials.twitter">IMO on X (Twitter)</a>
+        <a href="#" target="_blank" rel="noopener" data-bind-href="socials.telegram">IMO on Telegram</a>
+        <a href="#" target="_blank" rel="noopener" data-bind-href="socials.basescan">IMO on Basescan</a>
+      </div>
+      <div class="footer-col">
+        <h5>WEEX</h5>
+        <a href="https://www.weex.com/en/register?vipCode=vipmillion" target="_blank" rel="noopener">Sign up (affiliate link)</a>
+      </div>
+    </div>
+    <div class="disclaimer">
+      Links to WEEX are affiliate links. This site does not constitute investment advice. Trading crypto assets involves a high risk of capital loss. The frequency and amount of burns depend on the trading volume generated and on WEEX's affiliate program, both of which may evolve.
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 IMO MoreBurn</span>
+      <span>Trade. Buy. Burn.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Données du site (modifiables) -->
+<script src="data.js"></script>
+
+<!-- Chart.js pour le graphique des burns -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+  // ============================================================
+  //  Liaison automatique entre data.js et le HTML.
+  //  Tu n'as PAS à modifier ce script.
+  // ============================================================
+
+  function getNested(obj, path) {
+    return path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
+  }
+
+  // Parse "15/05/2026" -> Date object
+  function parseFrDate(str) {
+    const [d, m, y] = str.split('/').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  // Parse "5,230 IMO", "5 230 IMO", or "5230" -> 5230
+  // Treats comma and space as thousands separators, dot as decimal.
+  function parseAmount(str) {
+    return parseFloat(String(str).replace(/[^\d.]/g, '')) || 0;
+  }
+
+  function applyData() {
+    const data = window.SITE_DATA;
+    if (!data) return;
+
+    document.querySelectorAll('[data-bind]').forEach(el => {
+      const value = getNested(data, el.dataset.bind);
+      if (value !== undefined && value !== null && value !== '') {
+        el.textContent = value;
+      }
+    });
+
+    document.querySelectorAll('[data-bind-href]').forEach(el => {
+      const value = getNested(data, el.dataset.bindHref);
+      if (value && value !== '#') {
+        el.href = value;
+      }
+    });
+
+    const tbody = document.getElementById('burnsTableBody');
+    const burns = data.burns || [];
+    if (tbody && burns.length > 0) {
+      tbody.innerHTML = burns.map(b => `
+        <tr>
+          <td>${b.date}</td>
+          <td>
+            <span class="burn-amount">${b.amount}</span>
+            ${b.txTotalAmount ? `<div class="burn-amount-sub">of ${b.txTotalAmount} in tx</div>` : ''}
+          </td>
+          <td><a href="${b.txUrl}" target="_blank" rel="noopener" class="tx-link">${b.txHash}</a></td>
+          <td>${b.source}</td>
+          <td><span class="burn-tag${b.type === 'Add to LP' ? ' add' : ''}">${b.type}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    const countEl = document.getElementById('burnsCount');
+    if (countEl) countEl.textContent = burns.length;
+
+    // Auto-compute total USD burned from burns[].usdAmount
+    const totalUsd = burns.reduce((sum, b) => {
+      const v = typeof b.usdAmount === 'number' ? b.usdAmount : parseFloat(b.usdAmount) || 0;
+      return sum + v;
+    }, 0);
+    const usdEl = document.querySelector('[data-bind="metrics.totalUsdBurned"]');
+    if (usdEl) {
+      usdEl.textContent = '$' + totalUsd.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    drawBurnChart(burns);
+    drawAffiliatesChart(data.affiliatesHistory || []);
+    drawVolumeChart(data.volumeHistory || []);
+  }
+
+  // Fetch live WEEX stats from /api/stats (refreshed daily by cron)
+  // and override the static data.js values when successful.
+  async function fetchLiveStats() {
+    try {
+      const res = await fetch('/api/stats');
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success || !json.weex) return;
+
+      const live = json.weex;
+
+      // ----- Compute "Awaiting burn" -----
+      // Logic: each burn "resets" the counter. We only count commissions
+      // generated AFTER the most recent burn.
+      //
+      //   awaiting = (current_total_volume - volumeAtBurn_of_last_burn) × 0.06% × 75%
+      //
+      // If no burn has happened yet, awaiting = total_commissions (full volume).
+      const data = window.SITE_DATA || {};
+      // Use the rate provided by the API (configurable via Vercel env var).
+      // Falls back to a sensible default if the field is missing.
+      const COMMISSION_RATE = (typeof json.commissionRate === 'number' && json.commissionRate > 0)
+        ? json.commissionRate
+        : 0.0002827;
+
+      // Update the tooltip on the "est." badge with the current rate
+      const estTag = document.getElementById('estimationTag');
+      if (estTag) {
+        const ratePct = (COMMISSION_RATE * 100).toFixed(4);
+        estTag.title = `Estimation based on observed WEEX fee rate (${ratePct}% after rebate). Actual commission paid by WEEX may differ slightly.`;
+      }
+
+      // Parse the live total volume "$562,997" into a number
+      const liveVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
+
+      // Find the most recent burn (latest volumeAtBurn)
+      const burns = data.burns || [];
+      let lastVolumeAtBurn = 0;
+      burns.forEach(b => {
+        const v = typeof b.volumeAtBurn === 'number' ? b.volumeAtBurn : parseFloat(b.volumeAtBurn) || 0;
+        if (v > lastVolumeAtBurn) lastVolumeAtBurn = v;
+      });
+
+      let awaitingDisplay = live.commissionsPending;  // fallback to API value
+      if (Number.isFinite(liveVolume)) {
+        const volumeSinceLastBurn = Math.max(0, liveVolume - lastVolumeAtBurn);
+        const awaiting = volumeSinceLastBurn * COMMISSION_RATE;
+        awaitingDisplay = '$' + awaiting.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+
+      const map = {
+        'weex.accounts': live.accounts,
+        'weex.volume48h': live.volume48h,
+        'weex.commissionsPending': awaitingDisplay
+      };
+
+      Object.entries(map).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => {
+          el.textContent = value;
+        });
+      });
+    } catch (err) {
+      // Silent fail: keep the data.js fallback values shown.
+      console.warn('Live stats unavailable, using fallback values.', err);
+    }
+  }
+
+  applyDataAndFetch();
+  initScrollFadeIn();
+
+  // Reveal sections with .fade-in class as they enter the viewport.
+  // Uses IntersectionObserver (modern, performant, no scroll listener).
+  function initScrollFadeIn() {
+    const elements = document.querySelectorAll('.fade-in');
+    if (elements.length === 0) return;
+
+    // If IntersectionObserver isn't supported, just show everything.
+    if (!('IntersectionObserver' in window)) {
+      elements.forEach(el => el.classList.add('visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);  // play once, no replay on scroll back
+        }
+      });
+    }, {
+      threshold: 0.12,                    // trigger when 12% of section is visible
+      rootMargin: '0px 0px -60px 0px'     // start fade slightly before fully entering
+    });
+
+    elements.forEach(el => observer.observe(el));
+  }
+
+  function applyDataAndFetch() {
+    applyData();
+    fetchLiveStats();
+    fetchHistory();
+    fetchLeaderboard();
+  }
+
+  async function fetchLeaderboard() {
+    const tbody = document.getElementById('leaderboardBody');
+    const countEl = document.getElementById('leaderboardCount');
+    if (!tbody) return;
+
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.top)) throw new Error(json.error || 'Invalid response');
+
+      if (countEl) countEl.textContent = json.totalTraders ?? json.top.length;
+
+      if (json.top.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="lb-empty">No active traders yet.<br>Be the first one.</td></tr>';
+        return;
+      }
+
+      const medalClass = (rank) => rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const formatVol = (v) => '$' + v.toLocaleString('en-US');
+
+      // Escape HTML to be safe with custom labels
+      const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+
+      tbody.innerHTML = json.top.map(t => {
+        const traderName = t.identified
+          ? `<span class="lb-name">${escapeHtml(t.label)}</span>`
+          : `<span class="lb-uid-mono">${escapeHtml(t.uidMasked)}</span>`;
+        return `
+          <tr>
+            <td class="lb-rank">
+              <span class="lb-rank-medal ${medalClass(t.rank)}">${t.rank}</span>
+            </td>
+            <td class="lb-uid">${traderName}</td>
+            <td class="lb-vol">${formatVol(t.totalVolume)}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      console.warn('Leaderboard unavailable.', err);
+      tbody.innerHTML = '<tr><td colspan="3" class="lb-empty">Leaderboard temporarily unavailable.</td></tr>';
+    }
+  }
+
+  // Fetch the auto-tracked history from /api/history (Vercel Blob).
+  // If it returns valid data, redraw the charts with it.
+  // Otherwise, charts keep showing the data.js fallback.
+  async function fetchHistory() {
+    try {
+      // Fetch both /api/history (snapshots) and /api/stats (live) in parallel
+      const [historyRes, liveRes] = await Promise.all([
+        fetch('/api/history'),
+        fetch('/api/stats')
+      ]);
+
+      const historyJson = historyRes.ok ? await historyRes.json() : null;
+      const liveJson = liveRes.ok ? await liveRes.json() : null;
+
+      const snapshots = (historyJson && historyJson.success && Array.isArray(historyJson.snapshots))
+        ? historyJson.snapshots : [];
+
+      // We need at least the static data.js OR snapshots to draw something
+      const data = window.SITE_DATA || {};
+      const hasSnapshots = snapshots.length > 0;
+      const hasFallback = (data.affiliatesHistory || []).length > 0 || (data.volumeHistory || []).length > 0;
+      if (!hasSnapshots && !hasFallback) return;
+
+      // Convert YYYY-MM-DD to DD/MM/YYYY (the format the chart parser expects)
+      const toFr = (iso) => {
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+      };
+
+      // Build a Map of static fallback data keyed by date (DD/MM/YYYY)
+      const baseAffiliates = new Map();
+      (data.affiliatesHistory || []).forEach(p => baseAffiliates.set(p.date, p.accounts));
+      const baseVolume = new Map();
+      (data.volumeHistory || []).forEach(p => baseVolume.set(p.date, p.volume));
+
+      // Overlay blob snapshots on top of fallback data
+      snapshots.forEach(s => {
+        const frDate = toFr(s.date);
+        baseAffiliates.set(frDate, s.accounts);
+        baseVolume.set(frDate, s.volume);
+      });
+
+      // Override today's point with live API values to eliminate the up-to-15-min lag
+      // between the live counters at the top and the chart at the bottom.
+      if (liveJson && liveJson.success && liveJson.weex) {
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const todayFr = toFr(todayIso);
+
+        const liveAccounts = parseInt(liveJson.weex.accounts, 10);
+        if (Number.isFinite(liveAccounts)) {
+          baseAffiliates.set(todayFr, liveAccounts);
+        }
+
+        // Volume comes as "$280,758" - parse to integer
+        const liveVolume = parseFloat(String(liveJson.weex.volume48h || '').replace(/[^\d.]/g, ''));
+        if (Number.isFinite(liveVolume) && liveVolume > 0) {
+          baseVolume.set(todayFr, liveVolume);
+        }
+      }
+
+      // Convert maps back to arrays sorted by date (DD/MM/YYYY)
+      const parseFr = (str) => {
+        const [d, m, y] = str.split('/');
+        return new Date(+y, +m - 1, +d);
+      };
+      const affiliatesHistory = Array.from(baseAffiliates.entries())
+        .map(([date, accounts]) => ({ date, accounts }))
+        .sort((a, b) => parseFr(a.date) - parseFr(b.date));
+      const volumeHistory = Array.from(baseVolume.entries())
+        .map(([date, volume]) => ({ date, volume }))
+        .sort((a, b) => parseFr(a.date) - parseFr(b.date));
+
+      // Destroy existing Chart.js instances before redrawing
+      ['affiliatesChart', 'volumeChart'].forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) {
+          const existing = window.Chart && Chart.getChart && Chart.getChart(canvas);
+          if (existing) existing.destroy();
+        }
+      });
+
+      drawAffiliatesChart(affiliatesHistory);
+      drawVolumeChart(volumeHistory);
+    } catch (err) {
+      console.warn('Live history unavailable, using data.js fallback.', err);
+    }
+  }
+
+  function drawBurnChart(burns) {
+    const canvas = document.getElementById('burnChart');
+    const empty = document.getElementById('chartEmpty');
+    const totalEl = document.getElementById('chartTotalValue');
+    if (!canvas || !empty) return;
+
+    if (!burns || burns.length === 0) {
+      canvas.style.display = 'none';
+      empty.style.display = 'flex';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    empty.style.display = 'none';
+
+    // Trie chronologique + cumul
+    const sorted = [...burns]
+      .map(b => ({ date: parseFrDate(b.date), amount: parseAmount(b.amount), label: b.date }))
+      .sort((a, b) => a.date - b.date);
+
+    let cumulative = 0;
+    const labels = [];
+    const values = [];
+    sorted.forEach(b => {
+      cumulative += b.amount;
+      labels.push(b.label);
+      values.push(cumulative);
+    });
+
+    if (totalEl) totalEl.textContent = cumulative.toLocaleString('en-US') + ' IMO';
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'IMO burned (cumulative)',
+          data: values,
+          borderColor: '#0a0a0a',
+          backgroundColor: function(ctx) {
+            const chart = ctx.chart;
+            const { ctx: c, chartArea } = chart;
+            if (!chartArea) return 'rgba(10,10,10,0.05)';
+            const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, 'rgba(10,10,10,0.18)');
+            gradient.addColorStop(1, 'rgba(10,10,10,0.0)');
+            return gradient;
+          },
+          borderWidth: 2,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 4,
+          pointBackgroundColor: '#0a0a0a',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0a0a0a',
+            titleFont: { family: "'DM Mono', monospace", size: 11 },
+            bodyFont: { family: "'DM Sans', sans-serif", size: 13, weight: '500' },
+            padding: 12,
+            cornerRadius: 6,
+            displayColors: false,
+            callbacks: {
+              label: function(ctx) {
+                return ctx.parsed.y.toLocaleString('en-US') + ' IMO burned';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a'
+            },
+            border: { color: 'rgba(10,10,10,0.08)' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(10,10,10,0.05)' },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              callback: function(v) { return v.toLocaleString('en-US'); }
+            },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function drawAffiliatesChart(history) {
+    const canvas = document.getElementById('affiliatesChart');
+    const empty = document.getElementById('affiliatesEmpty');
+    const totalEl = document.getElementById('affiliatesTotalValue');
+    if (!canvas || !empty) return;
+
+    if (!history || history.length === 0) {
+      canvas.style.display = 'none';
+      empty.style.display = 'flex';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    empty.style.display = 'none';
+
+    const sorted = [...history]
+      .map(p => ({ date: parseFrDate(p.date), value: parseInt(String(p.accounts).replace(/[^\d]/g, ''), 10) || 0, label: p.date }))
+      .sort((a, b) => a.date - b.date);
+
+    const labels = sorted.map(p => p.label);
+    const values = sorted.map(p => p.value);
+    const current = values.length ? values[values.length - 1] : 0;
+
+    if (totalEl) totalEl.textContent = current.toLocaleString('en-US');
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'WEEX accounts',
+          data: values,
+          borderColor: '#0a0a0a',
+          backgroundColor: function(ctx) {
+            const chart = ctx.chart;
+            const { ctx: c, chartArea } = chart;
+            if (!chartArea) return 'rgba(10,10,10,0.05)';
+            const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, 'rgba(10,10,10,0.18)');
+            gradient.addColorStop(1, 'rgba(10,10,10,0.0)');
+            return gradient;
+          },
+          borderWidth: 2,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 4,
+          pointBackgroundColor: '#0a0a0a',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0a0a0a',
+            titleFont: { family: "'DM Mono', monospace", size: 11 },
+            bodyFont: { family: "'DM Sans', sans-serif", size: 13, weight: '500' },
+            padding: 12,
+            cornerRadius: 6,
+            displayColors: false,
+            callbacks: {
+              label: function(ctx) {
+                return ctx.parsed.y.toLocaleString('en-US') + ' accounts';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a'
+            },
+            border: { color: 'rgba(10,10,10,0.08)' }
+          },
+          y: {
+            beginAtZero: false,
+            grid: { color: 'rgba(10,10,10,0.05)' },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              callback: function(v) { return v.toLocaleString('en-US'); }
+            },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function drawVolumeChart(history) {
+    const canvas = document.getElementById('volumeChart');
+    const empty = document.getElementById('volumeEmpty');
+    const totalEl = document.getElementById('volumeTotalValue');
+    if (!canvas || !empty) return;
+
+    if (!history || history.length === 0) {
+      canvas.style.display = 'none';
+      empty.style.display = 'flex';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    empty.style.display = 'none';
+
+    // Sort by date
+    const sorted = [...history]
+      .map(p => ({ date: parseFrDate(p.date), volume: parseFloat(p.volume) || 0, label: p.date }))
+      .sort((a, b) => a.date - b.date);
+
+    // Compute daily delta from cumulative volume
+    const dailyData = sorted.map((p, i) => {
+      const prev = i > 0 ? sorted[i - 1].volume : 0;
+      const delta = Math.max(0, p.volume - prev);
+      return { label: p.label, daily: delta, cumul: p.volume };
+    });
+
+    const labels = dailyData.map(d => d.label);
+    const values = dailyData.map(d => d.daily);
+    const totalCumul = dailyData.length ? dailyData[dailyData.length - 1].cumul : 0;
+
+    if (totalEl) totalEl.textContent = '$' + Math.round(totalCumul).toLocaleString('en-US');
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Daily volume',
+          data: values,
+          backgroundColor: '#0a0a0a',
+          borderRadius: 3,
+          maxBarThickness: 28
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0a0a0a',
+            titleFont: { family: "'DM Mono', monospace", size: 11 },
+            bodyFont: { family: "'DM Sans', sans-serif", size: 13, weight: '500' },
+            padding: 12,
+            cornerRadius: 6,
+            displayColors: false,
+            callbacks: {
+              label: function(ctx) {
+                return '$' + Math.round(ctx.parsed.y).toLocaleString('en-US') + ' traded';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              maxRotation: 45,
+              minRotation: 0
+            },
+            border: { color: 'rgba(10,10,10,0.08)' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(10,10,10,0.05)' },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              callback: function(v) {
+                if (v >= 1000) return '$' + (v / 1000).toFixed(0) + 'k';
+                return '$' + v;
+              }
+            },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+  document.querySelectorAll('#navLinks a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('navLinks').classList.remove('open');
+    });
+  });
+
+  document.querySelectorAll('.faq-question').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+</script>
+
+</body>
+</html>

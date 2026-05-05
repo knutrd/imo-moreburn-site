@@ -10,7 +10,7 @@ import { callWeex, countAffiliates, aggregatePerUser } from './_weex.js';
 // Commission rate: configurable via Vercel env var COMMISSION_RATE
 // (decimal, e.g. "0.000353" for 0.0353%). Falls back to current observed value.
 // To update: Vercel Dashboard > Settings > Environment Variables.
-const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || (0.000471 * 0.75);
+const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 0.0002827;
 
 // ---------- Daily snapshot to Blob ----------
 

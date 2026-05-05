@@ -11,7 +11,7 @@
 import { put, list } from '@vercel/blob';
 import { aggregatePerUser, countAffiliates, maskUid } from './_weex.js';
 
-const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || (0.000471 * 0.75);
+const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 0.0002827;
 
 // Format a Date as YYYY-MM-DD (UTC)
 function toIsoDate(d) {
