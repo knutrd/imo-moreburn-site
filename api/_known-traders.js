@@ -14,4 +14,5 @@ export const KNOWN_TRADERS = {
   '5120027874': 'bull',
   '6876044501': 'DavidCrypto',
   '8785787998': 'ToMMy',
+  '5152046347': 'Lulucrypto',
 };
