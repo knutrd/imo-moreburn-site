@@ -15,4 +15,5 @@ export const KNOWN_TRADERS = {
   '6876044501': 'DavidCrypto',
   '8785787998': 'ToMMy',
   '5152046347': 'Lulucrypto',
+  '1577783606': 'Apex Edge Capital',
 };
