@@ -1,18 +1,18 @@
 // ============================================================
 //  /api/stats.js
-//  - Returns aggregated WEEX stats (accounts, volume, commissions)
-//  - On authorized cron call, also persists a daily snapshot to Blob
+//  - On authorized cron: calls WEEX, saves daily snapshot + live cache
+//  - On visitors: reads live cache from Blob (fast, no WEEX call)
+//  - Falls back to live WEEX API if cache is missing
 // ============================================================
 
-import { put } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
 import { callWeex, countAffiliates, aggregatePerUser } from './_weex.js';
 
-// Commission rate: configurable via Vercel env var COMMISSION_RATE
-// (decimal, e.g. "0.000353" for 0.0353%). Falls back to current observed value.
-// To update: Vercel Dashboard > Settings > Environment Variables.
 const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 0.0002827;
+const TOP_N = 10;
+const LIVE_CACHE_PATH = 'live/current.json';
 
-// ---------- Daily snapshot to Blob ----------
+// ---------- Blob: daily snapshot (existing) ----------
 
 async function saveDailySnapshot({ accounts, totalVolume }) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -42,6 +42,38 @@ async function saveDailySnapshot({ accounts, totalVolume }) {
   }
 }
 
+// ---------- Blob: live cache (NEW) ----------
+// Stores the latest WEEX aggregation so visitor-facing endpoints don't
+// need to call WEEX themselves. Overwritten every 15 min by the cron.
+
+async function saveLiveCache(payload) {
+  try {
+    await put(LIVE_CACHE_PATH, JSON.stringify(payload), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      cacheControlMaxAge: 30
+    });
+    return { saved: true };
+  } catch (err) {
+    return { saved: false, error: err.message };
+  }
+}
+
+async function readLiveCache() {
+  try {
+    const result = await list({ prefix: LIVE_CACHE_PATH, limit: 1 });
+    if (!result.blobs || result.blobs.length === 0) return null;
+    const blob = result.blobs[0];
+    const r = await fetch(blob.url, { cache: 'no-store' });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+
 // ---------- Debug helper ----------
 
 async function fetchAffiliateRaw() {
@@ -59,9 +91,9 @@ async function fetchAffiliateRaw() {
   return out;
 }
 
-// ---------- Main aggregation ----------
+// ---------- Main aggregation (heavy, only run on cron) ----------
 
-async function fetchAffiliateStats() {
+async function fetchFullStats() {
   const [accountsResult, perUserResult] = await Promise.allSettled([
     countAffiliates(),
     aggregatePerUser()
@@ -71,7 +103,35 @@ async function fetchAffiliateStats() {
   const users = perUserResult.status === 'fulfilled' ? perUserResult.value : [];
   const totalVolume = users.reduce((sum, u) => sum + u.totalVolume, 0);
 
-  return { accounts, totalVolume };
+  // Pre-compute the top N for the leaderboard
+  const top = users.slice(0, TOP_N).map((u, i) => ({
+    rank: i + 1,
+    uid: u.uid,
+    spotVolume: Math.round(u.spotVolume),
+    futuresVolume: Math.round(u.futuresVolume),
+    totalVolume: Math.round(u.totalVolume)
+  }));
+
+  return {
+    accounts,
+    totalVolume,
+    top,
+    totalTraders: users.length
+  };
+}
+
+// Format the public-facing response from raw stats
+function formatResponse(stats) {
+  return {
+    success: true,
+    updatedAt: new Date().toISOString(),
+    weex: {
+      accounts: String(stats.accounts),
+      volume48h: '$' + Math.round(stats.totalVolume).toLocaleString('en-US'),
+      commissionsPending: '$' + (stats.totalVolume * COMMISSION_RATE).toFixed(2),
+    },
+    commissionRate: COMMISSION_RATE
+  };
 }
 
 // ---------- HTTP handler ----------
@@ -83,6 +143,7 @@ export default async function handler(req, res) {
   const isRefreshRequest = req.query?.refresh === 'true';
   const isDebugRequest = req.query?.debug === 'true' && req.query?.secret === cronSecret;
 
+  // ---- Debug mode ----
   if (isDebugRequest) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Content-Type', 'application/json');
@@ -94,36 +155,69 @@ export default async function handler(req, res) {
     }
   }
 
+  // ---- Unauthorized refresh attempts are rejected ----
   if (isRefreshRequest && !isAuthorizedCron) {
     return res.status(401).json({ success: false, error: 'Unauthorized refresh request' });
   }
 
-  if (isAuthorizedCron) {
-    res.setHeader('Cache-Control', 'no-store');
-  } else {
-    res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=86400');
-  }
   res.setHeader('Content-Type', 'application/json');
 
-  try {
-    const { accounts, totalVolume } = await fetchAffiliateStats();
+  // ---- Cron path: fetch from WEEX, update caches, return fresh data ----
+  if (isAuthorizedCron) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const stats = await fetchFullStats();
 
-    let snapshot = null;
-    if (isAuthorizedCron) {
-      snapshot = await saveDailySnapshot({ accounts, totalVolume });
+      // Persist both the daily snapshot and the live cache
+      const [snapshot, liveCache] = await Promise.all([
+        saveDailySnapshot({ accounts: stats.accounts, totalVolume: stats.totalVolume }),
+        saveLiveCache({
+          updatedAt: new Date().toISOString(),
+          accounts: stats.accounts,
+          totalVolume: stats.totalVolume,
+          totalTraders: stats.totalTraders,
+          top: stats.top
+        })
+      ]);
+
+      const response = formatResponse(stats);
+      response.snapshot = snapshot;
+      response.liveCache = liveCache;
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(200).json({
+        success: false,
+        error: err.message,
+        updatedAt: new Date().toISOString(),
+        weex: null
+      });
     }
+  }
 
+  // ---- Visitor path: read live cache from Blob (fast, no WEEX call) ----
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=900');
+
+  const cache = await readLiveCache();
+  if (cache) {
     return res.status(200).json({
       success: true,
-      updatedAt: new Date().toISOString(),
+      updatedAt: cache.updatedAt,
       weex: {
-        accounts: String(accounts),
-        volume48h: '$' + Math.round(totalVolume).toLocaleString('en-US'),
-        commissionsPending: '$' + (totalVolume * COMMISSION_RATE).toFixed(2),
+        accounts: String(cache.accounts),
+        volume48h: '$' + Math.round(cache.totalVolume).toLocaleString('en-US'),
+        commissionsPending: '$' + (cache.totalVolume * COMMISSION_RATE).toFixed(2),
       },
       commissionRate: COMMISSION_RATE,
-      snapshot
+      source: 'cache'
     });
+  }
+
+  // ---- Cache miss fallback: try live WEEX (slower but degrades gracefully) ----
+  try {
+    const stats = await fetchFullStats();
+    const response = formatResponse(stats);
+    response.source = 'live-fallback';
+    return res.status(200).json(response);
   } catch (err) {
     return res.status(200).json({
       success: false,
