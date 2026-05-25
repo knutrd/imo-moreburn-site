@@ -18,4 +18,6 @@ export const KNOWN_TRADERS = {
   '1577783606': 'Apex Edge Capital',
   '8283070038': 'Le S',
   '7463747985': 'Crypto Futur',
+  '3485490878': 'nz',
+  '6946245419': 'Yusko',
 };
