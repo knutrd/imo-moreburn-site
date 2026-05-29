@@ -201,15 +201,24 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=900');
 
   const cache = await readLiveCache();
-  if (cache) {
+  // Cache is valid only if it has the monthly fields (new format).
+  // Old cache entries without monthVolume are ignored so we fall through
+  // to a fresh fetch and overwrite them on the next cron tick.
+  const isCacheValid = cache
+    && typeof cache.monthVolume === 'number'
+    && !Number.isNaN(cache.monthVolume);
+
+  if (isCacheValid) {
+    const monthVol = cache.monthVolume;
+    const lifetimeVol = typeof cache.lifetimeVolume === 'number' ? cache.lifetimeVolume : 0;
     return res.status(200).json({
       success: true,
       updatedAt: cache.updatedAt,
       weex: {
-        accounts: String(cache.accounts),
-        volume48h: '$' + Math.round(cache.monthVolume).toLocaleString('en-US'),
-        volumeLifetime: '$' + Math.round(cache.lifetimeVolume || 0).toLocaleString('en-US'),
-        commissionsPending: '$' + (cache.monthVolume * COMMISSION_RATE).toFixed(2),
+        accounts: String(cache.accounts ?? 0),
+        volume48h: '$' + Math.round(monthVol).toLocaleString('en-US'),
+        volumeLifetime: '$' + Math.round(lifetimeVol).toLocaleString('en-US'),
+        commissionsPending: '$' + (monthVol * COMMISSION_RATE).toFixed(2),
       },
       month: cache.month,
       commissionRate: COMMISSION_RATE,
