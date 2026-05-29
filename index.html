@@ -403,6 +403,45 @@
     color: var(--ink-muted);
     line-height: 1.5;
   }
+
+  .months-wrap {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 32px;
+  }
+  .months-table-wrap { margin-top: 20px; overflow-x: auto; }
+  .months-table { width: 100%; border-collapse: collapse; }
+  .months-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+  }
+  .months-table th.m-vol, .months-table th.m-com,
+  .months-table th.m-traders, .months-table th.m-accounts { text-align: right; }
+  .months-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.94rem;
+    font-family: var(--mono);
+  }
+  .months-table td.m-month { color: var(--ink); font-weight: 500; text-transform: capitalize; }
+  .months-table td.m-vol, .months-table td.m-com,
+  .months-table td.m-traders, .months-table td.m-accounts {
+    text-align: right; color: var(--ink);
+  }
+  .months-table tr:last-child td { border-bottom: none; }
+  .months-table tr:hover td { background: var(--bg-soft); }
+  @media (max-width: 600px) {
+    .months-wrap { padding: 24px 20px; }
+    .months-table th, .months-table td { padding: 12px 10px; font-size: 0.86rem; }
+  }
   @media (max-width: 600px) {
     .leaderboard-wrap { padding: 24px 20px; }
     .leaderboard-table th,
@@ -983,7 +1022,7 @@
             <div class="collab-stat-sub">via affiliate link</div>
           </div>
           <div class="collab-stat">
-            <div class="collab-stat-label">Total volume</div>
+            <div class="collab-stat-label">Volume this month</div>
             <div class="collab-stat-value" data-bind="weex.volume48h">$0</div>
             <div class="collab-stat-sub">traded via referrals</div>
           </div>
@@ -1106,6 +1145,29 @@
 
       <div class="leaderboard-disclaimer">
         Identifiers are partially masked. No personal data collected. Rankings update every 15 minutes.
+      </div>
+    </div>
+
+    <div class="months-wrap" id="monthsWrap" style="margin-top: 32px; display: none;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly history</div>
+          <div class="chart-subtitle">Volume, commissions and burns, month by month</div>
+        </div>
+      </div>
+      <div class="months-table-wrap">
+        <table class="months-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="m-vol">Volume</th>
+              <th class="m-com">Commissions</th>
+              <th class="m-traders">Traders</th>
+              <th class="m-accounts">New accounts</th>
+            </tr>
+          </thead>
+          <tbody id="monthsBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -1406,18 +1468,13 @@
       const live = json.weex;
 
       // ----- Compute "Awaiting burn" -----
-      // Logic: each burn "resets" the counter. We only count commissions
-      // generated AFTER the most recent burn.
-      //
-      //   awaiting = (current_total_volume - volumeAtBurn_of_last_burn) × 0.06% × 75%
-      //
-      // If no burn has happened yet, awaiting = total_commissions (full volume).
+      // Now that volume48h represents the CURRENT MONTH's volume only
+      // (it resets every 1st), awaiting burn = monthly commissions
+      // minus any burns done during the current month.
       const data = window.SITE_DATA || {};
-      // Use the rate provided by the API (configurable via Vercel env var).
-      // Falls back to a sensible default if the field is missing.
       const COMMISSION_RATE = (typeof json.commissionRate === 'number' && json.commissionRate > 0)
         ? json.commissionRate
-        : (0.000471 * 0.75);
+        : 0.0002827;
 
       // Update the tooltip on the "est." badge with the current rate
       const estTag = document.getElementById('estimationTag');
@@ -1426,21 +1483,28 @@
         estTag.title = `Estimation based on observed WEEX fee rate (${ratePct}% after rebate). Actual commission paid by WEEX may differ slightly.`;
       }
 
-      // Parse the live total volume "$562,997" into a number
-      const liveVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
+      // Parse the live monthly volume into a number
+      const liveMonthVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
 
-      // Find the most recent burn (latest volumeAtBurn)
+      // Sum USD already burned during the current month
+      const currentMonthIso = (json.month) || new Date().toISOString().slice(0, 7);
       const burns = data.burns || [];
-      let lastVolumeAtBurn = 0;
+      let burnedThisMonth = 0;
       burns.forEach(b => {
-        const v = typeof b.volumeAtBurn === 'number' ? b.volumeAtBurn : parseFloat(b.volumeAtBurn) || 0;
-        if (v > lastVolumeAtBurn) lastVolumeAtBurn = v;
+        if (!b.date) return;
+        // b.date is "DD/MM/YYYY" → convert to "YYYY-MM" for comparison
+        const parts = b.date.split('/');
+        if (parts.length !== 3) return;
+        const burnMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+        if (burnMonth !== currentMonthIso) return;
+        const v = typeof b.usdAmount === 'number' ? b.usdAmount : parseFloat(b.usdAmount) || 0;
+        burnedThisMonth += v;
       });
 
-      let awaitingDisplay = live.commissionsPending;  // fallback to API value
-      if (Number.isFinite(liveVolume)) {
-        const volumeSinceLastBurn = Math.max(0, liveVolume - lastVolumeAtBurn);
-        const awaiting = volumeSinceLastBurn * COMMISSION_RATE;
+      let awaitingDisplay = live.commissionsPending;
+      if (Number.isFinite(liveMonthVolume)) {
+        const totalCommissionsThisMonth = liveMonthVolume * COMMISSION_RATE;
+        const awaiting = Math.max(0, totalCommissionsThisMonth - burnedThisMonth);
         awaitingDisplay = '$' + awaiting.toLocaleString('en-US', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
@@ -1500,6 +1564,46 @@
     fetchLiveStats();
     fetchHistory();
     fetchLeaderboard();
+    fetchMonths();
+  }
+
+  // Fetch monthly archives and render the history table.
+  // Hidden until at least one archive exists.
+  async function fetchMonths() {
+    const wrap = document.getElementById('monthsWrap');
+    const tbody = document.getElementById('monthsBody');
+    if (!wrap || !tbody) return;
+
+    try {
+      const res = await fetch('/api/months');
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success || !Array.isArray(json.months) || json.months.length === 0) return;
+
+      const fmtMonth = (ym) => {
+        const [y, m] = ym.split('-').map(Number);
+        const d = new Date(Date.UTC(y, m - 1, 1));
+        return d.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      };
+      const fmtUsd = (v) => '$' + Math.round(v).toLocaleString('en-US');
+      const fmtUsdCents = (v) => '$' + (Math.round(v * 100) / 100).toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+
+      tbody.innerHTML = json.months.map(m => `
+        <tr>
+          <td class="m-month">${fmtMonth(m.month)}</td>
+          <td class="m-vol">${fmtUsd(m.stats.monthVolume || 0)}</td>
+          <td class="m-com">${fmtUsdCents(m.stats.commissionsGenerated || 0)}</td>
+          <td class="m-traders">${m.stats.totalTradersActive || 0}</td>
+          <td class="m-accounts">+${m.stats.accountsAddedThisMonth || 0}</td>
+        </tr>
+      `).join('');
+
+      wrap.style.display = '';
+    } catch (err) {
+      console.warn('Monthly history unavailable.', err);
+    }
   }
 
   async function fetchLeaderboard() {
