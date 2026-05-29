@@ -1519,6 +1519,8 @@
 
       Object.entries(map).forEach(([key, value]) => {
         if (value === undefined || value === null || value === '') return;
+        // Defensive: skip values that look like NaN ($NaN, NaN, etc.)
+        if (typeof value === 'string' && /NaN/i.test(value)) return;
         document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => {
           el.textContent = value;
         });
