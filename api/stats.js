@@ -1,8 +1,8 @@
 // ============================================================
 //  /api/stats.js
-//  - On authorized cron: calls WEEX, saves daily snapshot + live cache
-//  - On visitors: reads live cache from Blob (fast, no WEEX call)
-//  - Falls back to live WEEX API if cache is missing
+//  - Computes "volume of the current month" (not lifetime cumul)
+//  - Caches everything in Blob for visitors (no WEEX call on read)
+//  - On authorized cron: refreshes cache + daily snapshot
 // ============================================================
 
 import { put, list } from '@vercel/blob';
@@ -12,29 +12,37 @@ const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 0.0002827;
 const TOP_N = 10;
 const LIVE_CACHE_PATH = 'live/current.json';
 
-// ---------- Blob: daily snapshot (existing) ----------
+// Returns the UTC timestamp of the 1st of the current month at 00:00
+function getCurrentMonthStartMs() {
+  const now = new Date();
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0);
+}
 
-async function saveDailySnapshot({ accounts, totalVolume }) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return { saved: false, reason: 'BLOB_READ_WRITE_TOKEN missing' };
-  }
+function getCurrentMonthLabel() {
+  const now = new Date();
+  return now.toISOString().slice(0, 7);  // "2026-05"
+}
+
+// ---------- Blob helpers ----------
+
+async function saveDailySnapshot({ accounts, totalVolume, monthVolume }) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return { saved: false, reason: 'no token' };
 
   const today = new Date().toISOString().slice(0, 10);
   const pathname = `snapshots/${today}.json`;
   const payload = {
     date: today,
     accounts,
-    volume: Math.round(totalVolume),
+    volume: Math.round(totalVolume),         // lifetime cumulative (kept for history charts)
+    monthVolume: Math.round(monthVolume),    // volume of the current month only
+    month: getCurrentMonthLabel(),
     capturedAt: new Date().toISOString()
   };
 
   try {
     await put(pathname, JSON.stringify(payload), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 60
+      access: 'public', contentType: 'application/json',
+      addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60
     });
     return { saved: true, pathname };
   } catch (err) {
@@ -42,18 +50,11 @@ async function saveDailySnapshot({ accounts, totalVolume }) {
   }
 }
 
-// ---------- Blob: live cache (NEW) ----------
-// Stores the latest WEEX aggregation so visitor-facing endpoints don't
-// need to call WEEX themselves. Overwritten every 15 min by the cron.
-
 async function saveLiveCache(payload) {
   try {
     await put(LIVE_CACHE_PATH, JSON.stringify(payload), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 30
+      access: 'public', contentType: 'application/json',
+      addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 30
     });
     return { saved: true };
   } catch (err) {
@@ -64,47 +65,48 @@ async function saveLiveCache(payload) {
 async function readLiveCache() {
   try {
     const result = await list({ prefix: LIVE_CACHE_PATH, limit: 1 });
-    if (!result.blobs || result.blobs.length === 0) return null;
-    const blob = result.blobs[0];
-    const r = await fetch(blob.url, { cache: 'no-store' });
+    if (!result.blobs?.length) return null;
+    const r = await fetch(result.blobs[0].url, { cache: 'no-store' });
     if (!r.ok) return null;
     return await r.json();
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// ---------- Debug helper ----------
+// ---------- Debug ----------
 
 async function fetchAffiliateRaw() {
   const now = Date.now();
   const ninetyAgo = now - 90 * 24 * 60 * 60 * 1000;
   const out = {};
-
   try { out.uidsNoFilter = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=100'); }
   catch (e) { out.uidsNoFilterError = e.message; }
   try { out.tradeData = await callWeex(`/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`); }
   catch (e) { out.tradeDataError = e.message; }
-  try { out.commissions = await callWeex(`/api/v2/rebate/affiliate/getAffiliateCommission?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=100`); }
-  catch (e) { out.commissionsError = e.message; }
-
   return out;
 }
 
-// ---------- Main aggregation (heavy, only run on cron) ----------
+// ---------- Main aggregation ----------
+// Computes both lifetime totals AND current-month totals in one go,
+// using a single batched call to keep WEEX load minimal.
 
 async function fetchFullStats() {
-  const [accountsResult, perUserResult] = await Promise.allSettled([
+  const monthStartMs = getCurrentMonthStartMs();
+
+  const [accountsResult, lifetimeResult, monthResult] = await Promise.allSettled([
     countAffiliates(),
-    aggregatePerUser()
+    aggregatePerUser(),                                            // lifetime
+    aggregatePerUser({ fromMs: monthStartMs, toMs: Date.now() }),  // current month only
   ]);
 
   const accounts = accountsResult.status === 'fulfilled' ? accountsResult.value : 0;
-  const users = perUserResult.status === 'fulfilled' ? perUserResult.value : [];
-  const totalVolume = users.reduce((sum, u) => sum + u.totalVolume, 0);
+  const lifetimeUsers = lifetimeResult.status === 'fulfilled' ? lifetimeResult.value : [];
+  const monthUsers = monthResult.status === 'fulfilled' ? monthResult.value : [];
 
-  // Pre-compute the top N for the leaderboard
-  const top = users.slice(0, TOP_N).map((u, i) => ({
+  const lifetimeVolume = lifetimeUsers.reduce((s, u) => s + u.totalVolume, 0);
+  const monthVolume = monthUsers.reduce((s, u) => s + u.totalVolume, 0);
+
+  // Leaderboard ranked by THIS MONTH's volume (encourages activity)
+  const top = monthUsers.slice(0, TOP_N).map((u, i) => ({
     rank: i + 1,
     uid: u.uid,
     spotVolume: Math.round(u.spotVolume),
@@ -114,22 +116,26 @@ async function fetchFullStats() {
 
   return {
     accounts,
-    totalVolume,
+    lifetimeVolume,
+    monthVolume,
+    monthLabel: getCurrentMonthLabel(),
     top,
-    totalTraders: users.length
+    totalTraders: monthUsers.length,
+    totalLifetimeTraders: lifetimeUsers.length
   };
 }
 
-// Format the public-facing response from raw stats
 function formatResponse(stats) {
   return {
     success: true,
     updatedAt: new Date().toISOString(),
     weex: {
       accounts: String(stats.accounts),
-      volume48h: '$' + Math.round(stats.totalVolume).toLocaleString('en-US'),
-      commissionsPending: '$' + (stats.totalVolume * COMMISSION_RATE).toFixed(2),
+      volume48h: '$' + Math.round(stats.monthVolume).toLocaleString('en-US'),
+      volumeLifetime: '$' + Math.round(stats.lifetimeVolume).toLocaleString('en-US'),
+      commissionsPending: '$' + (stats.monthVolume * COMMISSION_RATE).toFixed(2),
     },
+    month: stats.monthLabel,
     commissionRate: COMMISSION_RATE
   };
 }
@@ -143,38 +149,37 @@ export default async function handler(req, res) {
   const isRefreshRequest = req.query?.refresh === 'true';
   const isDebugRequest = req.query?.debug === 'true' && req.query?.secret === cronSecret;
 
-  // ---- Debug mode ----
   if (isDebugRequest) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Content-Type', 'application/json');
-    try {
-      const raw = await fetchAffiliateRaw();
-      return res.status(200).json({ debug: true, raw });
-    } catch (err) {
-      return res.status(200).json({ debug: true, error: err.message });
-    }
+    try { return res.status(200).json({ debug: true, raw: await fetchAffiliateRaw() }); }
+    catch (err) { return res.status(200).json({ debug: true, error: err.message }); }
   }
 
-  // ---- Unauthorized refresh attempts are rejected ----
   if (isRefreshRequest && !isAuthorizedCron) {
     return res.status(401).json({ success: false, error: 'Unauthorized refresh request' });
   }
 
   res.setHeader('Content-Type', 'application/json');
 
-  // ---- Cron path: fetch from WEEX, update caches, return fresh data ----
+  // ---- Cron path: fetch from WEEX, update caches ----
   if (isAuthorizedCron) {
     res.setHeader('Cache-Control', 'no-store');
     try {
       const stats = await fetchFullStats();
 
-      // Persist both the daily snapshot and the live cache
       const [snapshot, liveCache] = await Promise.all([
-        saveDailySnapshot({ accounts: stats.accounts, totalVolume: stats.totalVolume }),
+        saveDailySnapshot({
+          accounts: stats.accounts,
+          totalVolume: stats.lifetimeVolume,
+          monthVolume: stats.monthVolume
+        }),
         saveLiveCache({
           updatedAt: new Date().toISOString(),
           accounts: stats.accounts,
-          totalVolume: stats.totalVolume,
+          lifetimeVolume: stats.lifetimeVolume,
+          monthVolume: stats.monthVolume,
+          month: stats.monthLabel,
           totalTraders: stats.totalTraders,
           top: stats.top
         })
@@ -186,15 +191,13 @@ export default async function handler(req, res) {
       return res.status(200).json(response);
     } catch (err) {
       return res.status(200).json({
-        success: false,
-        error: err.message,
-        updatedAt: new Date().toISOString(),
-        weex: null
+        success: false, error: err.message,
+        updatedAt: new Date().toISOString(), weex: null
       });
     }
   }
 
-  // ---- Visitor path: read live cache from Blob (fast, no WEEX call) ----
+  // ---- Visitor path: read cache ----
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=900');
 
   const cache = await readLiveCache();
@@ -204,15 +207,17 @@ export default async function handler(req, res) {
       updatedAt: cache.updatedAt,
       weex: {
         accounts: String(cache.accounts),
-        volume48h: '$' + Math.round(cache.totalVolume).toLocaleString('en-US'),
-        commissionsPending: '$' + (cache.totalVolume * COMMISSION_RATE).toFixed(2),
+        volume48h: '$' + Math.round(cache.monthVolume).toLocaleString('en-US'),
+        volumeLifetime: '$' + Math.round(cache.lifetimeVolume || 0).toLocaleString('en-US'),
+        commissionsPending: '$' + (cache.monthVolume * COMMISSION_RATE).toFixed(2),
       },
+      month: cache.month,
       commissionRate: COMMISSION_RATE,
       source: 'cache'
     });
   }
 
-  // ---- Cache miss fallback: try live WEEX (slower but degrades gracefully) ----
+  // ---- Cache miss fallback ----
   try {
     const stats = await fetchFullStats();
     const response = formatResponse(stats);
@@ -220,10 +225,8 @@ export default async function handler(req, res) {
     return res.status(200).json(response);
   } catch (err) {
     return res.status(200).json({
-      success: false,
-      error: err.message,
-      updatedAt: new Date().toISOString(),
-      weex: null
+      success: false, error: err.message,
+      updatedAt: new Date().toISOString(), weex: null
     });
   }
 }

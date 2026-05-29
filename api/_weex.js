@@ -63,16 +63,35 @@ export async function countAffiliates() {
   }
 }
 
-// Aggregate per-user trading data across the last 360 days (4 windows of 90 days).
-// Returns an array of { uid, spotVolume, futuresVolume, totalVolume } sorted by total volume desc.
-export async function aggregatePerUser() {
-  const now = Date.now();
-  const windowSize = 90 * 24 * 60 * 60 * 1000;
+// Aggregate per-user trading data.
+// Without args: last 360 days (lifetime cumulative).
+// With { fromMs, toMs }: only that range, split into 90-day chunks if needed.
+// Returns array of { uid, spotVolume, futuresVolume, totalVolume } sorted desc.
+export async function aggregatePerUser(opts = {}) {
   const userMap = new Map();
+  const windowSize = 90 * 24 * 60 * 60 * 1000;
 
-  for (let i = 0; i < 4; i++) {
-    const endTime = now - i * windowSize;
-    const startTime = endTime - windowSize + 1;
+  // Build the list of windows to fetch
+  const windows = [];
+  if (opts.fromMs && opts.toMs) {
+    // Custom range: split into 90-day chunks
+    let cursor = opts.toMs;
+    while (cursor > opts.fromMs) {
+      const start = Math.max(opts.fromMs, cursor - windowSize + 1);
+      windows.push({ startTime: start, endTime: cursor });
+      cursor = start - 1;
+    }
+  } else {
+    // Default: last 360 days
+    const now = Date.now();
+    for (let i = 0; i < 4; i++) {
+      const endTime = now - i * windowSize;
+      const startTime = endTime - windowSize + 1;
+      windows.push({ startTime, endTime });
+    }
+  }
+
+  for (const { startTime, endTime } of windows) {
     let page = 1;
 
     while (true) {
