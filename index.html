@@ -1091,19 +1091,26 @@
       </div>
     </div>
 
-    <div class="chart-wrap" id="monthlyVolumeWrap" style="margin-top: 32px; display: none;">
+    <div class="months-wrap" id="monthsWrap" style="margin-top: 32px; display: none;">
       <div class="chart-header">
         <div>
-          <div class="chart-title">Monthly volume</div>
-          <div class="chart-subtitle">Cumulative trading volume, month by month</div>
-        </div>
-        <div class="chart-total">
-          <div class="chart-total-value" id="monthlyVolumeTotalValue">$0</div>
-          <div class="chart-total-label">All months</div>
+          <div class="chart-title">Monthly history</div>
+          <div class="chart-subtitle">Volume, commissions and burns, month by month</div>
         </div>
       </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="monthlyVolumeChart"></canvas>
+      <div class="months-table-wrap">
+        <table class="months-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="m-vol">Volume</th>
+              <th class="m-com">Commissions</th>
+              <th class="m-traders">Traders</th>
+              <th class="m-accounts">New accounts</th>
+            </tr>
+          </thead>
+          <tbody id="monthsBody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -1164,28 +1171,6 @@
       </div>
     </div>
 
-    <div class="months-wrap" id="monthsWrap" style="margin-top: 32px; display: none;">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Monthly history</div>
-          <div class="chart-subtitle">Volume, commissions and burns, month by month</div>
-        </div>
-      </div>
-      <div class="months-table-wrap">
-        <table class="months-table">
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th class="m-vol">Volume</th>
-              <th class="m-com">Commissions</th>
-              <th class="m-traders">Traders</th>
-              <th class="m-accounts">New accounts</th>
-            </tr>
-          </thead>
-          <tbody id="monthsBody"></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -1607,13 +1592,8 @@
 
     try {
       // Fetch both archived months AND current live stats in parallel
-      const [monthsRes, statsRes] = await Promise.all([
-        fetch('/api/months'),
-        fetch('/api/stats')
-      ]);
-
+      const monthsRes = await fetch('/api/months');
       const monthsJson = monthsRes.ok ? await monthsRes.json() : null;
-      const statsJson = statsRes.ok ? await statsRes.json() : null;
 
       const archivedMonths = (monthsJson && monthsJson.success && Array.isArray(monthsJson.months))
         ? monthsJson.months : [];
@@ -1623,70 +1603,12 @@
         const d = new Date(Date.UTC(y, m - 1, 1));
         return d.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
       };
-      const fmtMonthShort = (ym) => {
-        const [y, m] = ym.split('-').map(Number);
-        const d = new Date(Date.UTC(y, m - 1, 1));
-        return d.toLocaleString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-      };
       const fmtUsd = (v) => '$' + Math.round(v).toLocaleString('en-US');
       const fmtUsdCents = (v) => '$' + (Math.round(v * 100) / 100).toLocaleString('en-US', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
       });
 
-      // ===== Build the data set for the monthly volume bar chart =====
-      // We show EVERY month from the launch (April 2026) to December 2026
-      // so the spacing stays consistent. Months with no data display as 0.
-      const sortedArchive = [...archivedMonths].sort((a, b) => a.month.localeCompare(b.month));
-
-      // Map archived months by YYYY-MM key for quick lookup
-      const archiveByKey = new Map();
-      sortedArchive.forEach(m => archiveByKey.set(m.month, m));
-
-      // Determine the live month volume (current partial month) from /api/stats
-      let liveMonthKey = null;
-      let liveMonthVol = 0;
-      if (statsJson && statsJson.success && statsJson.month) {
-        liveMonthKey = statsJson.month;
-        const v = parseFloat(String(statsJson.weex?.volume48h || '').replace(/[^\d.]/g, ''));
-        if (Number.isFinite(v)) liveMonthVol = v;
-      }
-
-      // Generate every month from launch to end of 2026
-      const LAUNCH_YEAR = 2026;
-      const LAUNCH_MONTH = 4;
-      const END_MONTH = 12;
-      const chartMonths = [];
-      for (let m = LAUNCH_MONTH; m <= END_MONTH; m++) {
-        const key = `${LAUNCH_YEAR}-${String(m).padStart(2, '0')}`;
-        const archived = archiveByKey.get(key);
-        if (archived) {
-          chartMonths.push({
-            label: fmtMonthShort(key),
-            volume: archived.stats.monthVolume || 0,
-            isCurrent: false
-          });
-        } else if (key === liveMonthKey && liveMonthVol > 0) {
-          chartMonths.push({
-            label: fmtMonthShort(key) + ' (so far)',
-            volume: liveMonthVol,
-            isCurrent: true
-          });
-        } else {
-          // Future or empty month: keep the slot for spacing, volume = 0
-          chartMonths.push({
-            label: fmtMonthShort(key),
-            volume: 0,
-            isCurrent: false
-          });
-        }
-      }
-
-      // Draw the chart if we have at least one month
-      if (chartMonths.length > 0) {
-        drawMonthlyVolumeChart(chartMonths);
-      }
-
-      // ===== Stop here if no archived months yet (table needs archives) =====
+      // ===== Stop here if no archived months yet =====
       if (archivedMonths.length === 0) return;
 
       tbody.innerHTML = archivedMonths.map(m => `
@@ -2127,93 +2049,6 @@
       }
     });
   }
-
-  // Draw the monthly volume bar chart.
-  // `months` is an array of { label: "May 2026", volume: 24500000 }, sorted chronologically.
-  function drawMonthlyVolumeChart(months) {
-    const wrap = document.getElementById('monthlyVolumeWrap');
-    const canvas = document.getElementById('monthlyVolumeChart');
-    const totalEl = document.getElementById('monthlyVolumeTotalValue');
-    if (!canvas || !wrap) return;
-
-    if (!months || months.length === 0) {
-      wrap.style.display = 'none';
-      return;
-    }
-
-    wrap.style.display = '';
-
-    // Destroy previous chart instance if any
-    const existing = window.Chart && Chart.getChart && Chart.getChart(canvas);
-    if (existing) existing.destroy();
-
-    const labels = months.map(m => m.label);
-    const values = months.map(m => m.volume);
-    const total = values.reduce((s, v) => s + v, 0);
-
-    if (totalEl) totalEl.textContent = '$' + Math.round(total).toLocaleString('en-US');
-
-    new Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Monthly volume',
-          data: values,
-          backgroundColor: '#0a0a0a',
-          borderRadius: 3,
-          barThickness: 28
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#0a0a0a',
-            titleFont: { family: "'DM Mono', monospace", size: 11 },
-            bodyFont: { family: "'DM Sans', sans-serif", size: 13, weight: '500' },
-            padding: 12,
-            cornerRadius: 6,
-            displayColors: false,
-            callbacks: {
-              label: function(ctx) {
-                return '$' + Math.round(ctx.parsed.y).toLocaleString('en-US') + ' traded';
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: {
-              font: { family: "'DM Mono', monospace", size: 11 },
-              color: '#8a8a8a',
-              maxRotation: 0,
-              minRotation: 0
-            },
-            border: { color: 'rgba(10,10,10,0.08)' }
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: 'rgba(10,10,10,0.05)' },
-            ticks: {
-              font: { family: "'DM Mono', monospace", size: 11 },
-              color: '#8a8a8a',
-              callback: function(v) {
-                if (v >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
-                if (v >= 1000) return '$' + (v / 1000).toFixed(0) + 'k';
-                return '$' + v;
-              }
-            },
-            border: { display: false }
-          }
-        }
-      }
-    });
-  }
-
 
   document.getElementById('menuToggle').addEventListener('click', () => {
     document.getElementById('navLinks').classList.toggle('open');
