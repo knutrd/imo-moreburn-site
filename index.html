@@ -1017,14 +1017,9 @@
       <div class="collab-right">
         <div class="collab-stats-row">
           <div class="collab-stat">
-            <div class="collab-stat-label">Total accounts signed up</div>
-            <div class="collab-stat-value" data-bind="weex.accounts">0</div>
-            <div class="collab-stat-sub">via affiliate link</div>
-          </div>
-          <div class="collab-stat">
-            <div class="collab-stat-label">Volume this month</div>
-            <div class="collab-stat-value" data-bind="weex.volume48h">$0</div>
-            <div class="collab-stat-sub">traded via referrals</div>
+            <div class="collab-stat-label">IMO already burned</div>
+            <div class="collab-stat-value" data-bind="weex.imoBurnedViaWeex">0</div>
+            <div class="collab-stat-sub">via this source</div>
           </div>
           <div class="collab-stat">
             <div class="collab-stat-label">Awaiting burn</div>
@@ -1032,19 +1027,14 @@
             <div class="collab-stat-sub">&ge;50% will be burned <span class="estimation-tag" id="estimationTag" title="Estimation based on observed WEEX fee rate. Actual commission paid by WEEX may differ slightly.">est.</span></div>
           </div>
           <div class="collab-stat">
-            <div class="collab-stat-label">Volume last month</div>
-            <div class="collab-stat-value" id="volumeLastMonth">$0</div>
-            <div class="collab-stat-sub" id="volumeLastMonthLabel">&nbsp;</div>
+            <div class="collab-stat-label">Volume this month</div>
+            <div class="collab-stat-value" data-bind="weex.volume48h">$0</div>
+            <div class="collab-stat-sub">traded via referrals</div>
           </div>
           <div class="collab-stat">
             <div class="collab-stat-label">Total commissions</div>
             <div class="collab-stat-value" id="totalCommissions">$0</div>
             <div class="collab-stat-sub">since launch <span class="estimation-tag" title="Cumulative commissions earned since the start, estimated from lifetime volume × WEEX rate.">est.</span></div>
-          </div>
-          <div class="collab-stat">
-            <div class="collab-stat-label">IMO already burned</div>
-            <div class="collab-stat-value" data-bind="weex.imoBurnedViaWeex">0</div>
-            <div class="collab-stat-sub">via this source</div>
           </div>
         </div>
         <div class="collab-fees">
@@ -1540,6 +1530,7 @@
       const map = {
         'weex.accounts': live.accounts,
         'weex.volume48h': live.volume48h,
+        'weex.volumeLifetime': live.volumeLifetime,
         'weex.commissionsPending': awaitingDisplay
       };
 
@@ -1674,15 +1665,6 @@
 
       // ===== Stop here if no archived months yet (table + last month card need archives) =====
       if (archivedMonths.length === 0) return;
-
-      // Populate "Volume last month" card (most recent archived month)
-      const lastMonth = archivedMonths[0];
-      if (lastMonth) {
-        const volEl = document.getElementById('volumeLastMonth');
-        const labelEl = document.getElementById('volumeLastMonthLabel');
-        if (volEl) volEl.textContent = fmtUsd(lastMonth.stats.monthVolume || 0);
-        if (labelEl) labelEl.textContent = fmtMonth(lastMonth.month);
-      }
 
       tbody.innerHTML = archivedMonths.map(m => `
         <tr>
@@ -2157,7 +2139,7 @@
           data: values,
           backgroundColor: '#0a0a0a',
           borderRadius: 3,
-          maxBarThickness: 64
+          maxBarThickness: 28
         }]
       },
       options: {
