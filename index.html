@@ -1634,27 +1634,50 @@
       });
 
       // ===== Build the data set for the monthly volume bar chart =====
-      // Sort archived months chronologically (oldest first)
+      // We show EVERY month from the launch (April 2026) to December 2026
+      // so the spacing stays consistent. Months with no data display as 0.
       const sortedArchive = [...archivedMonths].sort((a, b) => a.month.localeCompare(b.month));
-      const chartMonths = sortedArchive.map(m => ({
-        label: fmtMonthShort(m.month),
-        volume: m.stats.monthVolume || 0,
-        isCurrent: false
-      }));
 
-      // Add the current month (partial) from live stats if not already archived
+      // Map archived months by YYYY-MM key for quick lookup
+      const archiveByKey = new Map();
+      sortedArchive.forEach(m => archiveByKey.set(m.month, m));
+
+      // Determine the live month volume (current partial month) from /api/stats
+      let liveMonthKey = null;
+      let liveMonthVol = 0;
       if (statsJson && statsJson.success && statsJson.month) {
-        const liveMonth = statsJson.month;  // e.g. "2026-06"
-        const alreadyArchived = sortedArchive.some(m => m.month === liveMonth);
-        if (!alreadyArchived) {
-          const liveVol = parseFloat(String(statsJson.weex?.volume48h || '').replace(/[^\d.]/g, ''));
-          if (Number.isFinite(liveVol) && liveVol > 0) {
-            chartMonths.push({
-              label: fmtMonthShort(liveMonth) + ' (so far)',
-              volume: liveVol,
-              isCurrent: true
-            });
-          }
+        liveMonthKey = statsJson.month;
+        const v = parseFloat(String(statsJson.weex?.volume48h || '').replace(/[^\d.]/g, ''));
+        if (Number.isFinite(v)) liveMonthVol = v;
+      }
+
+      // Generate every month from launch to end of 2026
+      const LAUNCH_YEAR = 2026;
+      const LAUNCH_MONTH = 4;
+      const END_MONTH = 12;
+      const chartMonths = [];
+      for (let m = LAUNCH_MONTH; m <= END_MONTH; m++) {
+        const key = `${LAUNCH_YEAR}-${String(m).padStart(2, '0')}`;
+        const archived = archiveByKey.get(key);
+        if (archived) {
+          chartMonths.push({
+            label: fmtMonthShort(key),
+            volume: archived.stats.monthVolume || 0,
+            isCurrent: false
+          });
+        } else if (key === liveMonthKey && liveMonthVol > 0) {
+          chartMonths.push({
+            label: fmtMonthShort(key) + ' (so far)',
+            volume: liveMonthVol,
+            isCurrent: true
+          });
+        } else {
+          // Future or empty month: keep the slot for spacing, volume = 0
+          chartMonths.push({
+            label: fmtMonthShort(key),
+            volume: 0,
+            isCurrent: false
+          });
         }
       }
 
@@ -1663,7 +1686,7 @@
         drawMonthlyVolumeChart(chartMonths);
       }
 
-      // ===== Stop here if no archived months yet (table + last month card need archives) =====
+      // ===== Stop here if no archived months yet (table needs archives) =====
       if (archivedMonths.length === 0) return;
 
       tbody.innerHTML = archivedMonths.map(m => `
@@ -2139,7 +2162,7 @@
           data: values,
           backgroundColor: '#0a0a0a',
           borderRadius: 3,
-          maxBarThickness: 28
+          barThickness: 28
         }]
       },
       options: {
