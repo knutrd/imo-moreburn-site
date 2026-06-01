@@ -105,8 +105,8 @@ async function fetchFullStats() {
   const lifetimeVolume = lifetimeUsers.reduce((s, u) => s + u.totalVolume, 0);
   const monthVolume = monthUsers.reduce((s, u) => s + u.totalVolume, 0);
 
-  // Leaderboard ranked by THIS MONTH's volume (encourages activity)
-  const top = monthUsers.slice(0, TOP_N).map((u, i) => ({
+  // Leaderboard ranked by LIFETIME cumulative volume (since launch)
+  const top = lifetimeUsers.slice(0, TOP_N).map((u, i) => ({
     rank: i + 1,
     uid: u.uid,
     spotVolume: Math.round(u.spotVolume),
@@ -120,7 +120,7 @@ async function fetchFullStats() {
     monthVolume,
     monthLabel: getCurrentMonthLabel(),
     top,
-    totalTraders: monthUsers.length,
+    totalTraders: lifetimeUsers.length,
     totalLifetimeTraders: lifetimeUsers.length
   };
 }
