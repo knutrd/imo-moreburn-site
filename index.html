@@ -1017,7 +1017,7 @@
       <div class="collab-right">
         <div class="collab-stats-row">
           <div class="collab-stat">
-            <div class="collab-stat-label">Accounts signed up</div>
+            <div class="collab-stat-label">Total accounts signed up</div>
             <div class="collab-stat-value" data-bind="weex.accounts">0</div>
             <div class="collab-stat-sub">via affiliate link</div>
           </div>
@@ -1030,6 +1030,16 @@
             <div class="collab-stat-label">Awaiting burn</div>
             <div class="collab-stat-value" data-bind="weex.commissionsPending">$0</div>
             <div class="collab-stat-sub">&ge;50% will be burned <span class="estimation-tag" id="estimationTag" title="Estimation based on observed WEEX fee rate. Actual commission paid by WEEX may differ slightly.">est.</span></div>
+          </div>
+          <div class="collab-stat">
+            <div class="collab-stat-label">Volume last month</div>
+            <div class="collab-stat-value" id="volumeLastMonth">$0</div>
+            <div class="collab-stat-sub" id="volumeLastMonthLabel">&nbsp;</div>
+          </div>
+          <div class="collab-stat">
+            <div class="collab-stat-label">Total commissions</div>
+            <div class="collab-stat-value" id="totalCommissions">$0</div>
+            <div class="collab-stat-sub">since launch <span class="estimation-tag" title="Cumulative commissions earned since the start, estimated from lifetime volume × WEEX rate.">est.</span></div>
           </div>
           <div class="collab-stat">
             <div class="collab-stat-label">IMO already burned</div>
@@ -1088,6 +1098,22 @@
           </svg>
           <p>Volume will be tracked daily.<br>First data point coming soon.</p>
         </div>
+      </div>
+    </div>
+
+    <div class="chart-wrap" id="monthlyVolumeWrap" style="margin-top: 32px; display: none;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly volume</div>
+          <div class="chart-subtitle">Cumulative trading volume, month by month</div>
+        </div>
+        <div class="chart-total">
+          <div class="chart-total-value" id="monthlyVolumeTotalValue">$0</div>
+          <div class="chart-total-label">All months</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="monthlyVolumeChart"></canvas>
       </div>
     </div>
 
@@ -1525,6 +1551,18 @@
           el.textContent = value;
         });
       });
+
+      // ----- Total commissions since launch -----
+      // Computed from lifetime volume × commission rate.
+      const lifetimeVol = parseFloat(String(live.volumeLifetime || '').replace(/[^\d.]/g, ''));
+      const totalCommEl = document.getElementById('totalCommissions');
+      if (totalCommEl && Number.isFinite(lifetimeVol) && lifetimeVol > 0) {
+        const total = lifetimeVol * COMMISSION_RATE;
+        totalCommEl.textContent = '$' + total.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
     } catch (err) {
       // Silent fail: keep the data.js fallback values shown.
       console.warn('Live stats unavailable, using fallback values.', err);
@@ -1577,22 +1615,76 @@
     if (!wrap || !tbody) return;
 
     try {
-      const res = await fetch('/api/months');
-      if (!res.ok) return;
-      const json = await res.json();
-      if (!json.success || !Array.isArray(json.months) || json.months.length === 0) return;
+      // Fetch both archived months AND current live stats in parallel
+      const [monthsRes, statsRes] = await Promise.all([
+        fetch('/api/months'),
+        fetch('/api/stats')
+      ]);
+
+      const monthsJson = monthsRes.ok ? await monthsRes.json() : null;
+      const statsJson = statsRes.ok ? await statsRes.json() : null;
+
+      const archivedMonths = (monthsJson && monthsJson.success && Array.isArray(monthsJson.months))
+        ? monthsJson.months : [];
 
       const fmtMonth = (ym) => {
         const [y, m] = ym.split('-').map(Number);
         const d = new Date(Date.UTC(y, m - 1, 1));
         return d.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
       };
+      const fmtMonthShort = (ym) => {
+        const [y, m] = ym.split('-').map(Number);
+        const d = new Date(Date.UTC(y, m - 1, 1));
+        return d.toLocaleString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+      };
       const fmtUsd = (v) => '$' + Math.round(v).toLocaleString('en-US');
       const fmtUsdCents = (v) => '$' + (Math.round(v * 100) / 100).toLocaleString('en-US', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
       });
 
-      tbody.innerHTML = json.months.map(m => `
+      // ===== Build the data set for the monthly volume bar chart =====
+      // Sort archived months chronologically (oldest first)
+      const sortedArchive = [...archivedMonths].sort((a, b) => a.month.localeCompare(b.month));
+      const chartMonths = sortedArchive.map(m => ({
+        label: fmtMonthShort(m.month),
+        volume: m.stats.monthVolume || 0,
+        isCurrent: false
+      }));
+
+      // Add the current month (partial) from live stats if not already archived
+      if (statsJson && statsJson.success && statsJson.month) {
+        const liveMonth = statsJson.month;  // e.g. "2026-06"
+        const alreadyArchived = sortedArchive.some(m => m.month === liveMonth);
+        if (!alreadyArchived) {
+          const liveVol = parseFloat(String(statsJson.weex?.volume48h || '').replace(/[^\d.]/g, ''));
+          if (Number.isFinite(liveVol) && liveVol > 0) {
+            chartMonths.push({
+              label: fmtMonthShort(liveMonth) + ' (so far)',
+              volume: liveVol,
+              isCurrent: true
+            });
+          }
+        }
+      }
+
+      // Draw the chart if we have at least one month
+      if (chartMonths.length > 0) {
+        drawMonthlyVolumeChart(chartMonths);
+      }
+
+      // ===== Stop here if no archived months yet (table + last month card need archives) =====
+      if (archivedMonths.length === 0) return;
+
+      // Populate "Volume last month" card (most recent archived month)
+      const lastMonth = archivedMonths[0];
+      if (lastMonth) {
+        const volEl = document.getElementById('volumeLastMonth');
+        const labelEl = document.getElementById('volumeLastMonthLabel');
+        if (volEl) volEl.textContent = fmtUsd(lastMonth.stats.monthVolume || 0);
+        if (labelEl) labelEl.textContent = fmtMonth(lastMonth.month);
+      }
+
+      tbody.innerHTML = archivedMonths.map(m => `
         <tr>
           <td class="m-month">${fmtMonth(m.month)}</td>
           <td class="m-vol">${fmtUsd(m.stats.monthVolume || 0)}</td>
@@ -2020,6 +2112,92 @@
               font: { family: "'DM Mono', monospace", size: 11 },
               color: '#8a8a8a',
               callback: function(v) {
+                if (v >= 1000) return '$' + (v / 1000).toFixed(0) + 'k';
+                return '$' + v;
+              }
+            },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  // Draw the monthly volume bar chart.
+  // `months` is an array of { label: "May 2026", volume: 24500000 }, sorted chronologically.
+  function drawMonthlyVolumeChart(months) {
+    const wrap = document.getElementById('monthlyVolumeWrap');
+    const canvas = document.getElementById('monthlyVolumeChart');
+    const totalEl = document.getElementById('monthlyVolumeTotalValue');
+    if (!canvas || !wrap) return;
+
+    if (!months || months.length === 0) {
+      wrap.style.display = 'none';
+      return;
+    }
+
+    wrap.style.display = '';
+
+    // Destroy previous chart instance if any
+    const existing = window.Chart && Chart.getChart && Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const labels = months.map(m => m.label);
+    const values = months.map(m => m.volume);
+    const total = values.reduce((s, v) => s + v, 0);
+
+    if (totalEl) totalEl.textContent = '$' + Math.round(total).toLocaleString('en-US');
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Monthly volume',
+          data: values,
+          backgroundColor: '#0a0a0a',
+          borderRadius: 3,
+          maxBarThickness: 64
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0a0a0a',
+            titleFont: { family: "'DM Mono', monospace", size: 11 },
+            bodyFont: { family: "'DM Sans', sans-serif", size: 13, weight: '500' },
+            padding: 12,
+            cornerRadius: 6,
+            displayColors: false,
+            callbacks: {
+              label: function(ctx) {
+                return '$' + Math.round(ctx.parsed.y).toLocaleString('en-US') + ' traded';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              maxRotation: 0,
+              minRotation: 0
+            },
+            border: { color: 'rgba(10,10,10,0.08)' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(10,10,10,0.05)' },
+            ticks: {
+              font: { family: "'DM Mono', monospace", size: 11 },
+              color: '#8a8a8a',
+              callback: function(v) {
+                if (v >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
                 if (v >= 1000) return '$' + (v / 1000).toFixed(0) + 'k';
                 return '$' + v;
               }
