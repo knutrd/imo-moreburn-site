@@ -1527,18 +1527,6 @@
           el.textContent = value;
         });
       });
-
-      // ----- Total commissions since launch -----
-      // Computed from lifetime volume × commission rate.
-      const lifetimeVol = parseFloat(String(live.volumeLifetime || '').replace(/[^\d.]/g, ''));
-      const totalCommEl = document.getElementById('totalCommissions');
-      if (totalCommEl && Number.isFinite(lifetimeVol) && lifetimeVol > 0) {
-        const total = lifetimeVol * COMMISSION_RATE;
-        totalCommEl.textContent = '$' + total.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
-      }
     } catch (err) {
       // Silent fail: keep the data.js fallback values shown.
       console.warn('Live stats unavailable, using fallback values.', err);
@@ -1591,9 +1579,13 @@
     if (!wrap || !tbody) return;
 
     try {
-      // Fetch both archived months AND current live stats in parallel
-      const monthsRes = await fetch('/api/months');
+      // Fetch archived months + current stats (for the live month estimation)
+      const [monthsRes, statsRes] = await Promise.all([
+        fetch('/api/months'),
+        fetch('/api/stats')
+      ]);
       const monthsJson = monthsRes.ok ? await monthsRes.json() : null;
+      const statsJson = statsRes.ok ? await statsRes.json() : null;
 
       const archivedMonths = (monthsJson && monthsJson.success && Array.isArray(monthsJson.months))
         ? monthsJson.months : [];
@@ -1607,6 +1599,38 @@
       const fmtUsdCents = (v) => '$' + (Math.round(v * 100) / 100).toLocaleString('en-US', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
       });
+
+      // ----- Total commissions since launch -----
+      // = sum of real WEEX commissions for past months (from archives)
+      // + estimated commissions for the current month (live volume × rate)
+      const totalCommEl = document.getElementById('totalCommissions');
+      if (totalCommEl && statsJson?.success) {
+        const rate = (typeof statsJson.commissionRate === 'number' && statsJson.commissionRate > 0)
+          ? statsJson.commissionRate
+          : 0.0002827;
+
+        // Real values from archived months
+        const archivedTotal = archivedMonths.reduce((sum, m) => {
+          return sum + (m.stats.commissionsGenerated || 0);
+        }, 0);
+
+        // Estimated value for the current month
+        const currentMonthKey = statsJson.month;
+        const isCurrentArchived = archivedMonths.some(m => m.month === currentMonthKey);
+        let currentMonthCommissions = 0;
+        if (!isCurrentArchived) {
+          const liveMonthVol = parseFloat(String(statsJson.weex?.volume48h || '').replace(/[^\d.]/g, ''));
+          if (Number.isFinite(liveMonthVol) && liveMonthVol > 0) {
+            currentMonthCommissions = liveMonthVol * rate;
+          }
+        }
+
+        const total = archivedTotal + currentMonthCommissions;
+        totalCommEl.textContent = '$' + total.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
 
       // ===== Stop here if no archived months yet =====
       if (archivedMonths.length === 0) return;
