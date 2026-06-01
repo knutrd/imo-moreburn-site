@@ -145,7 +145,12 @@ function formatResponse(stats) {
 export default async function handler(req, res) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers['authorization'];
-  const isAuthorizedCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const vercelCronHeader = req.headers['x-vercel-cron'];
+  // Accept either:
+  //  - external cron with Bearer CRON_SECRET (e.g. cron-job.org, curl tests)
+  //  - Vercel native cron (sends x-vercel-cron header from internal infra)
+  const isAuthorizedCron = (cronSecret && authHeader === `Bearer ${cronSecret}`)
+                        || Boolean(vercelCronHeader);
   const isRefreshRequest = req.query?.refresh === 'true';
   const isDebugRequest = req.query?.debug === 'true' && req.query?.secret === cronSecret;
 
