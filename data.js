@@ -77,6 +77,7 @@ window.SITE_DATA = {
   burns: [
     {
       date: "01/06/2026",
+      forMonth: "2026-05",
       amount: "27,500 IMO",
       usdAmount: 10500,
       txTotalAmount: "41,869 IMO",
@@ -87,6 +88,7 @@ window.SITE_DATA = {
     },
     {
       date: "30/04/2026",
+      forMonth: "2026-04",
       amount: "2,083 IMO",
       usdAmount: 1000,
       volumeAtBurn: 324449,
