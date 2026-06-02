@@ -1487,16 +1487,22 @@
       // Parse the live monthly volume into a number
       const liveMonthVolume = parseFloat(String(live.volume48h || '').replace(/[^\d.]/g, ''));
 
-      // Sum USD already burned during the current month
+      // Sum USD already burned that consumed THIS MONTH's commissions.
+      // A burn is associated with a month via the optional `forMonth` field
+      // (which month's commissions it used). If absent, fall back to the
+      // calendar month of the burn date for backwards compatibility.
       const currentMonthIso = (json.month) || new Date().toISOString().slice(0, 7);
       const burns = data.burns || [];
       let burnedThisMonth = 0;
       burns.forEach(b => {
-        if (!b.date) return;
-        // b.date is "DD/MM/YYYY" → convert to "YYYY-MM" for comparison
-        const parts = b.date.split('/');
-        if (parts.length !== 3) return;
-        const burnMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+        let burnMonth = b.forMonth;
+        if (!burnMonth && b.date) {
+          // b.date is "DD/MM/YYYY" → convert to "YYYY-MM"
+          const parts = b.date.split('/');
+          if (parts.length === 3) {
+            burnMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+          }
+        }
         if (burnMonth !== currentMonthIso) return;
         const v = typeof b.usdAmount === 'number' ? b.usdAmount : parseFloat(b.usdAmount) || 0;
         burnedThisMonth += v;
