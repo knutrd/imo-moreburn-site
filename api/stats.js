@@ -173,6 +173,28 @@ export default async function handler(req, res) {
     try {
       const stats = await fetchFullStats();
 
+      // Sanity check: lifetime volume can only grow, never shrink.
+      // If today's WEEX response gives us LESS than what's in the cache,
+      // the API probably partially failed. Refuse to overwrite.
+      const previousCache = await readLiveCache();
+      const previousLifetime = previousCache?.lifetimeVolume || 0;
+      const previousMonth = previousCache?.monthVolume || 0;
+      const looksRegressed = stats.lifetimeVolume < previousLifetime * 0.9
+                          && previousLifetime > 100000;
+      const monthRegressed = stats.monthVolume < previousMonth * 0.9
+                          && previousMonth > 50000
+                          && stats.monthLabel === previousCache?.month;
+
+      if (looksRegressed || monthRegressed) {
+        return res.status(200).json({
+          success: false,
+          skipped: 'volume-regression-detected',
+          previous: { lifetime: previousLifetime, month: previousMonth },
+          fetched: { lifetime: stats.lifetimeVolume, month: stats.monthVolume },
+          updatedAt: new Date().toISOString()
+        });
+      }
+
       const [snapshot, liveCache] = await Promise.all([
         saveDailySnapshot({
           accounts: stats.accounts,

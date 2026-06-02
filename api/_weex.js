@@ -93,15 +93,28 @@ export async function aggregatePerUser(opts = {}) {
 
   for (const { startTime, endTime } of windows) {
     let page = 1;
+    let consecutiveErrors = 0;
 
     while (true) {
       const path = `/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${startTime}&endTime=${endTime}&page=${page}&pageSize=100`;
       let resp;
+      let errored = false;
       try {
         resp = await callWeex(path);
-      } catch {
+        consecutiveErrors = 0;
+      } catch (err) {
+        errored = true;
+        consecutiveErrors += 1;
+        // Retry up to 3 times with a short delay before giving up on this window
+        if (consecutiveErrors <= 3) {
+          await new Promise(r => setTimeout(r, 500 * consecutiveErrors));
+          continue;  // retry the same page
+        }
+        // After 3 retries, log and break this window's loop (move to next window)
+        console.warn('[aggregatePerUser] Window failed after retries', { startTime, endTime, page, error: err.message });
         break;
       }
+      if (errored) continue;
       const records = resp?.records || resp?.data?.records || [];
       if (records.length === 0) break;
 
