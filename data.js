@@ -5,8 +5,8 @@
 window.SITE_DATA = {
 
   metrics: {
-    totalBurned: "48,400",
-    totalBurns: "3",
+    totalBurned: "54,461",
+    totalBurns: "4",
     futuresFeeShare: "75%",
     cadence: "Monthly"
   },
@@ -16,7 +16,7 @@ window.SITE_DATA = {
     accounts: "0",
     volume48h: "$0",
     commissionsPending: "$0",
-    imoBurnedViaWeex: "48,400",
+    imoBurnedViaWeex: "54,461",
     feesFutures: "75%",
     feesSpot: "75%",
     burnAllocation: "50%"
@@ -75,6 +75,17 @@ window.SITE_DATA = {
   ],
 
   burns: [
+    {
+      date: "04/08/2026",
+      forMonth: "2026-07",
+      amount: "6,061 IMO",
+      usdAmount: 2467,
+      txTotalAmount: "21,346 IMO",
+      txHash: "0x7710b810...4ae549",
+      txUrl: "https://basescan.org/tx/0x7710b810d7c6082be0bc499f718afa250d171ffdce9bfd1473bccaa2344ae549",
+      source: "WEEX",
+      type: "Burn"
+    },
     {
       date: "07/07/2026",
       forMonth: "2026-06",
