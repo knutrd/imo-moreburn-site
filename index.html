@@ -1756,8 +1756,10 @@
           baseAffiliates.set(todayFr, liveAccounts);
         }
 
-        // Volume comes as "$280,758" - parse to integer
-        const liveVolume = parseFloat(String(liveJson.weex.volume48h || '').replace(/[^\d.]/g, ''));
+        // Use the LIFETIME cumulative volume (not just this month) so the daily
+        // cumulative chart stays coherent. volume48h is the current month only.
+        const liveVolumeRaw = liveJson.weex.volumeLifetime || liveJson.weex.volume48h || '';
+        const liveVolume = parseFloat(String(liveVolumeRaw).replace(/[^\d.]/g, ''));
         if (Number.isFinite(liveVolume) && liveVolume > 0) {
           baseVolume.set(todayFr, liveVolume);
         }
