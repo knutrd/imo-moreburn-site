@@ -94,6 +94,7 @@ export async function aggregatePerUser(opts = {}) {
   for (const { startTime, endTime } of windows) {
     let page = 1;
     let consecutiveErrors = 0;
+    let knownTotalPages = null;  // discovered on the first successful call
 
     while (true) {
       const path = `/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${startTime}&endTime=${endTime}&page=${page}&pageSize=100`;
@@ -105,19 +106,25 @@ export async function aggregatePerUser(opts = {}) {
       } catch (err) {
         errored = true;
         consecutiveErrors += 1;
-        // Retry up to 3 times with a short delay before giving up on this window
         if (consecutiveErrors <= 3) {
           await new Promise(r => setTimeout(r, 500 * consecutiveErrors));
-          continue;  // retry the same page
+          continue;
         }
-        // After 3 retries, log and break this window's loop (move to next window)
         console.warn('[aggregatePerUser] Window failed after retries', { startTime, endTime, page, error: err.message });
         break;
       }
       if (errored) continue;
-      const records = resp?.records || resp?.data?.records || [];
-      if (records.length === 0) break;
 
+      const records = resp?.records || resp?.data?.records || [];
+
+      // Read pagination info (coerce to Number in case the API returns strings)
+      const totalPagesRaw = resp?.pages ?? resp?.data?.pages;
+      const totalPages = Number(totalPagesRaw);
+      if (Number.isFinite(totalPages) && totalPages > 0) {
+        knownTotalPages = totalPages;
+      }
+
+      // Absorb records from this page (unless empty - but keep paginating!)
       for (const r of records) {
         if (!r.uid) continue;
         const spot = parseFloat(r.spotTradingAmount || 0);
@@ -128,8 +135,14 @@ export async function aggregatePerUser(opts = {}) {
         userMap.set(r.uid, existing);
       }
 
-      const totalPages = resp?.pages || resp?.data?.pages || 1;
-      if (page >= totalPages) break;
+      // Decide whether to fetch the next page.
+      // Priority: use knownTotalPages if the API told us. Otherwise, stop only
+      // when we get an empty page.
+      if (knownTotalPages !== null) {
+        if (page >= knownTotalPages) break;
+      } else if (records.length === 0) {
+        break;
+      }
       page += 1;
     }
   }
