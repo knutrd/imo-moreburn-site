@@ -8,5 +8,10 @@
       "path": "/api/cron-monthly",
       "schedule": "5 0 1 * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/stats.js": {
+      "maxDuration": 60
+    }
+  }
 }
