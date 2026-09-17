@@ -98,9 +98,33 @@ async function fetchFullStats() {
     aggregatePerUser({ fromMs: monthStartMs, toMs: Date.now() }),  // current month only
   ]);
 
+  // FIX: log failures loudly. Previously a rejected promise here silently
+  // fell back to an empty array, which made lifetimeVolume/monthVolume
+  // collapse to ~0 and permanently tripped the anti-regression guard below
+  // — freezing the cache with no visible error anywhere.
+  if (accountsResult.status === 'rejected') {
+    console.error('[fetchFullStats] countAffiliates failed:', accountsResult.reason);
+  }
+  if (lifetimeResult.status === 'rejected') {
+    console.error('[fetchFullStats] lifetime aggregation failed:', lifetimeResult.reason);
+  }
+  if (monthResult.status === 'rejected') {
+    console.error('[fetchFullStats] month aggregation failed:', monthResult.reason);
+  }
+
+  // FIX: if the core WEEX calls failed, stop here instead of continuing
+  // with empty data. The caller's catch block will surface this clearly
+  // (success:false + error message) instead of a silent no-op.
+  if (lifetimeResult.status === 'rejected' || monthResult.status === 'rejected') {
+    throw new Error(
+      `WEEX aggregation failed (lifetime=${lifetimeResult.status}, month=${monthResult.status}): ` +
+      `${lifetimeResult.reason?.message || monthResult.reason?.message || 'unknown error'}`
+    );
+  }
+
   const accounts = accountsResult.status === 'fulfilled' ? accountsResult.value : 0;
-  const lifetimeUsers = lifetimeResult.status === 'fulfilled' ? lifetimeResult.value : [];
-  const monthUsers = monthResult.status === 'fulfilled' ? monthResult.value : [];
+  const lifetimeUsers = lifetimeResult.value;
+  const monthUsers = monthResult.value;
 
   const lifetimeVolume = lifetimeUsers.reduce((s, u) => s + u.totalVolume, 0);
   const monthVolume = monthUsers.reduce((s, u) => s + u.totalVolume, 0);
@@ -186,6 +210,13 @@ export default async function handler(req, res) {
                           && stats.monthLabel === previousCache?.month;
 
       if (looksRegressed || monthRegressed) {
+        // FIX: log this loudly. Previously this branch could silently repeat
+        // on every single cron tick with zero trace in the logs, which is
+        // indistinguishable from "everything is fine".
+        console.warn('[stats] volume regression guard triggered — cache NOT updated', {
+          previousLifetime, previousMonth,
+          fetchedLifetime: stats.lifetimeVolume, fetchedMonth: stats.monthVolume
+        });
         return res.status(200).json({
           success: false,
           skipped: 'volume-regression-detected',
@@ -217,6 +248,8 @@ export default async function handler(req, res) {
       response.liveCache = liveCache;
       return res.status(200).json(response);
     } catch (err) {
+      // FIX: log the underlying error server-side too, not just in the response.
+      console.error('[stats] cron run failed:', err);
       return res.status(200).json({
         success: false, error: err.message,
         updatedAt: new Date().toISOString(), weex: null
@@ -260,6 +293,7 @@ export default async function handler(req, res) {
     response.source = 'live-fallback';
     return res.status(200).json(response);
   } catch (err) {
+    console.error('[stats] visitor fallback fetch failed:', err);
     return res.status(200).json({
       success: false, error: err.message,
       updatedAt: new Date().toISOString(), weex: null
