@@ -128,9 +128,17 @@ export async function getAffiliateUIDs() {
 // Without args: last 360 days (lifetime cumulative).
 // With { fromMs, toMs }: only that range, split into 90-day chunks if needed.
 // Returns array of { uid, spotVolume, futuresVolume, totalVolume } sorted desc.
+//
+// IMPORTANT: if any 90-day window can't be fully paginated (WEEX errors out
+// repeatedly on some page), this THROWS instead of silently returning a
+// truncated total. Previously a partial failure here produced an
+// under-counted "lifetime volume" with zero indication anything was wrong —
+// which then tripped the anti-regression guard in stats.js on every run,
+// permanently freezing the public cache with no visible cause.
 export async function aggregatePerUser(opts = {}) {
   const userMap = new Map();
   const windowSize = 90 * 24 * 60 * 60 * 1000;
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   // Build the list of windows to fetch
   const windows = [];
@@ -168,11 +176,16 @@ export async function aggregatePerUser(opts = {}) {
         errored = true;
         consecutiveErrors += 1;
         if (consecutiveErrors <= 3) {
-          await new Promise(r => setTimeout(r, 500 * consecutiveErrors));
+          await sleep(500 * consecutiveErrors);
           continue;
         }
-        console.warn('[aggregatePerUser] Window failed after retries', { startTime, endTime, page, error: err.message });
-        break;
+        // FIX: previously this just `break`-ed out of the page loop,
+        // silently dropping every remaining page of this window and
+        // returning an under-counted total with no error anywhere.
+        throw new Error(
+          `[aggregatePerUser] window ${startTime}-${endTime} failed at page ${page} ` +
+          `after 3 retries: ${err.message}`
+        );
       }
       if (errored) continue;
 
@@ -205,6 +218,10 @@ export async function aggregatePerUser(opts = {}) {
         break;
       }
       page += 1;
+      // Small delay between pages to avoid tripping WEEX rate limits —
+      // repeated rapid pagination is the most likely cause of the
+      // page-N-failed-after-retries errors seen in production.
+      await sleep(120);
     }
   }
 
