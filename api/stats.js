@@ -8,12 +8,11 @@
 // ============================================================
 
 import { put, list } from '@vercel/blob';
-import { callWeex, countAffiliates, aggregatePerUser, getAffiliateUIDs } from './_weex.js';
+import { callWeex, countAffiliates, aggregatePerUser } from './_weex.js';
 
 const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 0.0002827;
 const TOP_N = 10;
 const LIVE_CACHE_PATH = 'live/current.json';
-const KNOWN_UIDS_PATH = 'meta/known-uids.json';
 
 // Returns the UTC timestamp of the 1st of the current month at 00:00
 function getCurrentMonthStartMs() {
@@ -27,30 +26,6 @@ function getCurrentMonthLabel() {
 }
 
 // ---------- Blob helpers ----------
-
-async function readKnownUids() {
-  try {
-    const result = await list({ prefix: KNOWN_UIDS_PATH, limit: 1 });
-    if (!result.blobs?.length) return [];
-    const r = await fetch(result.blobs[0].url, { cache: 'no-store' });
-    if (!r.ok) return [];
-    const data = await r.json();
-    return Array.isArray(data?.uids) ? data.uids : [];
-  } catch { return []; }
-}
-
-async function saveKnownUids(uidsArray) {
-  try {
-    await put(KNOWN_UIDS_PATH, JSON.stringify({ uids: uidsArray, updatedAt: new Date().toISOString() }), {
-      access: 'public', contentType: 'application/json',
-      addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60
-    });
-    return true;
-  } catch (err) {
-    console.error('[saveKnownUids] failed:', err.message);
-    return false;
-  }
-}
 
 async function saveDailySnapshot({ accounts, totalVolume, monthVolume }) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return { saved: false, reason: 'no token' };
@@ -73,6 +48,7 @@ async function saveDailySnapshot({ accounts, totalVolume, monthVolume }) {
     });
     return { saved: true, pathname };
   } catch (err) {
+    console.error('[saveDailySnapshot] Blob write failed:', err.message);
     return { saved: false, error: err.message };
   }
 }
@@ -85,6 +61,7 @@ async function saveLiveCache(payload) {
     });
     return { saved: true };
   } catch (err) {
+    console.error('[saveLiveCache] Blob write failed:', err.message);
     return { saved: false, error: err.message };
   }
 }
@@ -112,46 +89,18 @@ async function fetchAffiliateRaw() {
   return out;
 }
 
-// ---------- Account tracking (monotonic) ----------
-// Registered accounts can only ever increase. Rather than trusting a
-// single "total" number from WEEX (observed to intermittently glitch,
-// e.g. dropping from ~370 to ~10 for no real reason), we accumulate every
-// UID we've ever seen into a persistent set. The reported count is the
-// size of that set, unioned with whatever new UIDs this run found — so a
-// bad/partial WEEX response degrades to "no new accounts today", never to
-// "accounts disappeared".
-async function resolveAccountCount() {
-  const [uidsResult, knownUids] = await Promise.all([
-    getAffiliateUIDs(),
-    readKnownUids()
-  ]);
-
-  if (uidsResult.length === 0) {
-    console.warn('[resolveAccountCount] getAffiliateUIDs returned nothing this run — keeping previous known set as-is');
-  }
-
-  const merged = new Set(knownUids);
-  for (const uid of uidsResult) merged.add(uid);
-
-  const mergedArray = Array.from(merged);
-  if (mergedArray.length > knownUids.length) {
-    await saveKnownUids(mergedArray);
-  }
-
-  return mergedArray.length;
-}
-
 // ---------- Main aggregation ----------
 // Computes both lifetime totals AND current-month totals in one go,
 // using a single batched call to keep WEEX load minimal.
 
 async function fetchFullStats() {
   const monthStartMs = getCurrentMonthStartMs();
+  const monthLabel = getCurrentMonthLabel();
 
   const [accountsResult, lifetimeResult, monthResult] = await Promise.allSettled([
-    resolveAccountCount(),
-    aggregatePerUser(),                                            // lifetime
-    aggregatePerUser({ fromMs: monthStartMs, toMs: Date.now() }),  // current month only
+    countAffiliates(),
+    aggregatePerUser({ label: 'lifetime' }),                                            // lifetime
+    aggregatePerUser({ fromMs: monthStartMs, toMs: Date.now(), label: `month-${monthLabel}` }),  // current month only
   ]);
 
   // Log failures loudly instead of silently falling back to empty arrays.
@@ -160,7 +109,7 @@ async function fetchFullStats() {
   // permanently tripped the anti-regression guard below — freezing the
   // cache with no visible error anywhere.
   if (accountsResult.status === 'rejected') {
-    console.error('[fetchFullStats] resolveAccountCount failed:', accountsResult.reason);
+    console.error('[fetchFullStats] countAffiliates failed:', accountsResult.reason);
   }
   if (lifetimeResult.status === 'rejected') {
     console.error('[fetchFullStats] lifetime aggregation failed:', lifetimeResult.reason);
@@ -179,7 +128,7 @@ async function fetchFullStats() {
     );
   }
 
-  const accountsFromUids = accountsResult.status === 'fulfilled' ? accountsResult.value : null;
+  const accountsCount = accountsResult.status === 'fulfilled' ? accountsResult.value : null;
   const lifetimeUsers = lifetimeResult.value;
   const monthUsers = monthResult.value;
 
@@ -196,7 +145,7 @@ async function fetchFullStats() {
   }));
 
   return {
-    accounts: accountsFromUids,   // may be null if resolveAccountCount() itself threw — handled by caller
+    accounts: accountsCount,   // may be null if countAffiliates() itself threw — handled by caller
     lifetimeVolume,
     monthVolume,
     monthLabel: getCurrentMonthLabel(),

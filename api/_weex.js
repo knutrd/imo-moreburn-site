@@ -52,76 +52,26 @@ export async function callWeex(path, method = 'GET', body = '') {
 }
 
 // Total registered affiliates (lifetime cumulative).
-// KNOWN ISSUE: relies on a single pageSize=1 call and WEEX's own "total"
-// field, which has been observed to intermittently under-report. Prefer
-// getAffiliateUIDs() below for anything that needs to be accurate/stable
-// over time. Kept for backward compatibility (used as a rough fallback
-// in cron-monthly.js).
+// FIX: originally called getAffiliateUIDs, which turns out to be a
+// different/limited WEEX endpoint that only returns a small subset
+// (observed: 10, while the real total is 377). getChannelUserTradeAndAsset
+// reports the true total affiliate count in its "total" field regardless
+// of the date range queried, so we reuse it here with pageSize=1 to keep
+// the call cheap.
 export async function countAffiliates() {
   try {
-    const resp = await callWeex('/api/v3/rebate/affiliate/getAffiliateUIDs?page=1&pageSize=1');
+    const now = Date.now();
+    const ninetyAgo = now - 90 * 24 * 60 * 60 * 1000;
+    const resp = await callWeex(
+      `/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${ninetyAgo}&endTime=${now}&page=1&pageSize=1`
+    );
     const total = resp?.total ?? resp?.data?.total;
     if (typeof total === 'number') return total;
-    const list = resp?.channelUserInfoItemList || resp?.data?.channelUserInfoItemList || [];
-    return list.length;
-  } catch {
+    return 0;
+  } catch (err) {
+    console.error('[countAffiliates] failed:', err.message);
     return 0;
   }
-}
-
-// Fully paginates the affiliate UID list and returns every UID seen,
-// instead of trusting a single potentially-glitchy "total" field.
-// Returns an array of UID strings (may be empty on total API failure —
-// the caller is responsible for merging this into a persistent set so a
-// transient failure here never looks like accounts disappearing).
-export async function getAffiliateUIDs() {
-  const uids = new Set();
-  let page = 1;
-  let knownTotalPages = null;
-  let consecutiveErrors = 0;
-
-  while (true) {
-    const path = `/api/v3/rebate/affiliate/getAffiliateUIDs?page=${page}&pageSize=100`;
-    let resp;
-    try {
-      resp = await callWeex(path);
-      consecutiveErrors = 0;
-    } catch (err) {
-      consecutiveErrors += 1;
-      if (consecutiveErrors <= 3) {
-        await new Promise(r => setTimeout(r, 500 * consecutiveErrors));
-        continue;
-      }
-      console.warn('[getAffiliateUIDs] page failed after retries', { page, error: err.message });
-      break;
-    }
-
-    const list = resp?.channelUserInfoItemList || resp?.data?.channelUserInfoItemList || [];
-
-    // NOTE: verify this field name against a real response via
-    // /api/stats?debug=true&secret=... before relying on this in prod —
-    // WEEX's exact key for the UID inside each list item wasn't confirmed
-    // against a live payload. Common shapes are tried as a fallback.
-    for (const item of list) {
-      const uid = item?.uid ?? item?.channelUid ?? item?.userId ?? item;
-      if (uid !== undefined && uid !== null) uids.add(String(uid));
-    }
-
-    const totalPagesRaw = resp?.pages ?? resp?.data?.pages;
-    const totalPages = Number(totalPagesRaw);
-    if (Number.isFinite(totalPages) && totalPages > 0) {
-      knownTotalPages = totalPages;
-    }
-
-    if (knownTotalPages !== null) {
-      if (page >= knownTotalPages) break;
-    } else if (list.length === 0) {
-      break;
-    }
-    page += 1;
-  }
-
-  return Array.from(uids);
 }
 
 // Aggregate per-user trading data.
@@ -139,6 +89,7 @@ export async function aggregatePerUser(opts = {}) {
   const userMap = new Map();
   const windowSize = 90 * 24 * 60 * 60 * 1000;
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const label = opts.label || 'unlabeled';
 
   // Build the list of windows to fetch
   const windows = [];
@@ -164,6 +115,9 @@ export async function aggregatePerUser(opts = {}) {
     let page = 1;
     let consecutiveErrors = 0;
     let knownTotalPages = null;  // discovered on the first successful call
+    let windowRecords = 0;
+    let windowVolume = 0;
+    let windowTotal = null;
 
     while (true) {
       const path = `/api/v3/rebate/affiliate/getChannelUserTradeAndAsset?startTime=${startTime}&endTime=${endTime}&page=${page}&pageSize=100`;
@@ -190,6 +144,9 @@ export async function aggregatePerUser(opts = {}) {
       if (errored) continue;
 
       const records = resp?.records || resp?.data?.records || [];
+      windowRecords += records.length;
+      const totalRaw = resp?.total ?? resp?.data?.total;
+      if (typeof totalRaw === 'number') windowTotal = totalRaw;
 
       // Read pagination info (coerce to Number in case the API returns strings)
       const totalPagesRaw = resp?.pages ?? resp?.data?.pages;
@@ -203,6 +160,7 @@ export async function aggregatePerUser(opts = {}) {
         if (!r.uid) continue;
         const spot = parseFloat(r.spotTradingAmount || 0);
         const futures = parseFloat(r.futuresTradingAmount || 0);
+        windowVolume += spot + futures;
         const existing = userMap.get(r.uid) || { uid: r.uid, spotVolume: 0, futuresVolume: 0 };
         existing.spotVolume += spot;
         existing.futuresVolume += futures;
@@ -223,6 +181,9 @@ export async function aggregatePerUser(opts = {}) {
       // page-N-failed-after-retries errors seen in production.
       await sleep(120);
     }
+
+    console.log(`[aggregatePerUser:${label}] window ${new Date(startTime).toISOString()} -> ${new Date(endTime).toISOString()}: ` +
+      `records=${windowRecords}, declaredTotal=${windowTotal}, windowVolume=${Math.round(windowVolume)}`);
   }
 
   // Build sorted list
@@ -239,6 +200,8 @@ export async function aggregatePerUser(opts = {}) {
     }
   }
   list.sort((a, b) => b.totalVolume - a.totalVolume);
+  const grandTotal = list.reduce((s, u) => s + u.totalVolume, 0);
+  console.log(`[aggregatePerUser:${label}] TOTAL across all windows: uniqueTradersWithVolume=${list.length}, totalVolume=${Math.round(grandTotal)}`);
   return list;
 }
 
