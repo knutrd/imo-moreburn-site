@@ -176,13 +176,20 @@ export default async function handler(req, res) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers['authorization'];
   const vercelCronHeader = req.headers['x-vercel-cron'];
-  // Accept either:
-  //  - external cron with Bearer CRON_SECRET (e.g. cron-job.org, curl tests)
+  // Accept any of:
   //  - Vercel native cron (sends x-vercel-cron header from internal infra)
+  //  - external cron with Bearer CRON_SECRET (e.g. cron-job.org, curl tests)
+  //  - a plain browser URL with ?secret=... (handy for manually triggering
+  //    a refresh, e.g. after a known-legitimate WEEX data correction)
   const isAuthorizedCron = (cronSecret && authHeader === `Bearer ${cronSecret}`)
-                        || Boolean(vercelCronHeader);
+                        || Boolean(vercelCronHeader)
+                        || (cronSecret && req.query?.secret === cronSecret);
   const isRefreshRequest = req.query?.refresh === 'true';
   const isDebugRequest = req.query?.debug === 'true' && req.query?.secret === cronSecret;
+  // One-off escape hatch: only usable by an already-authorized caller,
+  // for cases like a legitimate WEEX-side data correction that would
+  // otherwise be (correctly, normally) rejected by the regression guard.
+  const overrideRegressionGuard = isAuthorizedCron && req.query?.override === 'true';
 
   if (isDebugRequest) {
     res.setHeader('Cache-Control', 'no-store');
@@ -216,7 +223,7 @@ export default async function handler(req, res) {
                           && previousMonth > 50000
                           && stats.monthLabel === previousCache?.month;
 
-      if (looksRegressed || monthRegressed) {
+      if ((looksRegressed || monthRegressed) && !overrideRegressionGuard) {
         console.warn('[stats] volume regression guard triggered — cache NOT updated', {
           previousLifetime, previousMonth,
           fetchedLifetime: stats.lifetimeVolume, fetchedMonth: stats.monthVolume
@@ -227,6 +234,12 @@ export default async function handler(req, res) {
           previous: { lifetime: previousLifetime, month: previousMonth },
           fetched: { lifetime: stats.lifetimeVolume, month: stats.monthVolume },
           updatedAt: new Date().toISOString()
+        });
+      }
+      if ((looksRegressed || monthRegressed) && overrideRegressionGuard) {
+        console.warn('[stats] volume regression guard BYPASSED via ?override=true — writing anyway', {
+          previousLifetime, previousMonth,
+          fetchedLifetime: stats.lifetimeVolume, fetchedMonth: stats.monthVolume
         });
       }
 
