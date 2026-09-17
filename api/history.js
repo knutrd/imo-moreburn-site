@@ -48,10 +48,23 @@ export default async function handler(req, res) {
       .filter(s => s && s.date && typeof s.accounts === 'number')
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // FIX: "accounts" (registered WEEX affiliates) can only ever grow.
+    // A handful of past snapshots recorded a lower value than the day
+    // before, caused by a transient WEEX API read glitch. Rather than
+    // rewriting the stored blobs, apply a running maximum here so the
+    // public-facing curve is guaranteed monotonically non-decreasing —
+    // this is safe to re-run any time and never invents data, it only
+    // ever raises a value up to the highest one already seen.
+    let runningMax = 0;
+    const corrected = valid.map(s => {
+      runningMax = Math.max(runningMax, s.accounts);
+      return { ...s, accounts: runningMax };
+    });
+
     return res.status(200).json({
       success: true,
-      count: valid.length,
-      snapshots: valid
+      count: corrected.length,
+      snapshots: corrected
     });
   } catch (err) {
     return res.status(200).json({

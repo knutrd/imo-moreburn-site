@@ -2,15 +2,18 @@
 //  /api/stats.js
 //  - Computes "volume of the current month" (not lifetime cumul)
 //  - Caches everything in Blob for visitors (no WEEX call on read)
+//  - Tracks registered accounts as a persistent, ever-growing UID
+//    set (accounts can only be added, never disappear)
 //  - On authorized cron: refreshes cache + daily snapshot
 // ============================================================
 
 import { put, list } from '@vercel/blob';
-import { callWeex, countAffiliates, aggregatePerUser } from './_weex.js';
+import { callWeex, countAffiliates, aggregatePerUser, getAffiliateUIDs } from './_weex.js';
 
 const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 0.0002827;
 const TOP_N = 10;
 const LIVE_CACHE_PATH = 'live/current.json';
+const KNOWN_UIDS_PATH = 'meta/known-uids.json';
 
 // Returns the UTC timestamp of the 1st of the current month at 00:00
 function getCurrentMonthStartMs() {
@@ -24,6 +27,30 @@ function getCurrentMonthLabel() {
 }
 
 // ---------- Blob helpers ----------
+
+async function readKnownUids() {
+  try {
+    const result = await list({ prefix: KNOWN_UIDS_PATH, limit: 1 });
+    if (!result.blobs?.length) return [];
+    const r = await fetch(result.blobs[0].url, { cache: 'no-store' });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return Array.isArray(data?.uids) ? data.uids : [];
+  } catch { return []; }
+}
+
+async function saveKnownUids(uidsArray) {
+  try {
+    await put(KNOWN_UIDS_PATH, JSON.stringify({ uids: uidsArray, updatedAt: new Date().toISOString() }), {
+      access: 'public', contentType: 'application/json',
+      addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60
+    });
+    return true;
+  } catch (err) {
+    console.error('[saveKnownUids] failed:', err.message);
+    return false;
+  }
+}
 
 async function saveDailySnapshot({ accounts, totalVolume, monthVolume }) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return { saved: false, reason: 'no token' };
@@ -85,6 +112,35 @@ async function fetchAffiliateRaw() {
   return out;
 }
 
+// ---------- Account tracking (monotonic) ----------
+// Registered accounts can only ever increase. Rather than trusting a
+// single "total" number from WEEX (observed to intermittently glitch,
+// e.g. dropping from ~370 to ~10 for no real reason), we accumulate every
+// UID we've ever seen into a persistent set. The reported count is the
+// size of that set, unioned with whatever new UIDs this run found — so a
+// bad/partial WEEX response degrades to "no new accounts today", never to
+// "accounts disappeared".
+async function resolveAccountCount() {
+  const [uidsResult, knownUids] = await Promise.all([
+    getAffiliateUIDs(),
+    readKnownUids()
+  ]);
+
+  if (uidsResult.length === 0) {
+    console.warn('[resolveAccountCount] getAffiliateUIDs returned nothing this run — keeping previous known set as-is');
+  }
+
+  const merged = new Set(knownUids);
+  for (const uid of uidsResult) merged.add(uid);
+
+  const mergedArray = Array.from(merged);
+  if (mergedArray.length > knownUids.length) {
+    await saveKnownUids(mergedArray);
+  }
+
+  return mergedArray.length;
+}
+
 // ---------- Main aggregation ----------
 // Computes both lifetime totals AND current-month totals in one go,
 // using a single batched call to keep WEEX load minimal.
@@ -93,17 +149,18 @@ async function fetchFullStats() {
   const monthStartMs = getCurrentMonthStartMs();
 
   const [accountsResult, lifetimeResult, monthResult] = await Promise.allSettled([
-    countAffiliates(),
+    resolveAccountCount(),
     aggregatePerUser(),                                            // lifetime
     aggregatePerUser({ fromMs: monthStartMs, toMs: Date.now() }),  // current month only
   ]);
 
-  // FIX: log failures loudly. Previously a rejected promise here silently
-  // fell back to an empty array, which made lifetimeVolume/monthVolume
-  // collapse to ~0 and permanently tripped the anti-regression guard below
-  // — freezing the cache with no visible error anywhere.
+  // Log failures loudly instead of silently falling back to empty arrays.
+  // Previously a rejected promise here silently fell back to an empty
+  // array, which made lifetimeVolume/monthVolume collapse to ~0 and
+  // permanently tripped the anti-regression guard below — freezing the
+  // cache with no visible error anywhere.
   if (accountsResult.status === 'rejected') {
-    console.error('[fetchFullStats] countAffiliates failed:', accountsResult.reason);
+    console.error('[fetchFullStats] resolveAccountCount failed:', accountsResult.reason);
   }
   if (lifetimeResult.status === 'rejected') {
     console.error('[fetchFullStats] lifetime aggregation failed:', lifetimeResult.reason);
@@ -112,8 +169,8 @@ async function fetchFullStats() {
     console.error('[fetchFullStats] month aggregation failed:', monthResult.reason);
   }
 
-  // FIX: if the core WEEX calls failed, stop here instead of continuing
-  // with empty data. The caller's catch block will surface this clearly
+  // If the core WEEX calls failed, stop here instead of continuing with
+  // empty data. The caller's catch block will surface this clearly
   // (success:false + error message) instead of a silent no-op.
   if (lifetimeResult.status === 'rejected' || monthResult.status === 'rejected') {
     throw new Error(
@@ -122,7 +179,7 @@ async function fetchFullStats() {
     );
   }
 
-  const accounts = accountsResult.status === 'fulfilled' ? accountsResult.value : 0;
+  const accountsFromUids = accountsResult.status === 'fulfilled' ? accountsResult.value : null;
   const lifetimeUsers = lifetimeResult.value;
   const monthUsers = monthResult.value;
 
@@ -139,7 +196,7 @@ async function fetchFullStats() {
   }));
 
   return {
-    accounts,
+    accounts: accountsFromUids,   // may be null if resolveAccountCount() itself threw — handled by caller
     lifetimeVolume,
     monthVolume,
     monthLabel: getCurrentMonthLabel(),
@@ -203,6 +260,7 @@ export default async function handler(req, res) {
       const previousCache = await readLiveCache();
       const previousLifetime = previousCache?.lifetimeVolume || 0;
       const previousMonth = previousCache?.monthVolume || 0;
+      const previousAccounts = previousCache?.accounts || 0;
       const looksRegressed = stats.lifetimeVolume < previousLifetime * 0.9
                           && previousLifetime > 100000;
       const monthRegressed = stats.monthVolume < previousMonth * 0.9
@@ -210,9 +268,6 @@ export default async function handler(req, res) {
                           && stats.monthLabel === previousCache?.month;
 
       if (looksRegressed || monthRegressed) {
-        // FIX: log this loudly. Previously this branch could silently repeat
-        // on every single cron tick with zero trace in the logs, which is
-        // indistinguishable from "everything is fine".
         console.warn('[stats] volume regression guard triggered — cache NOT updated', {
           previousLifetime, previousMonth,
           fetchedLifetime: stats.lifetimeVolume, fetchedMonth: stats.monthVolume
@@ -226,15 +281,20 @@ export default async function handler(req, res) {
         });
       }
 
+      // Accounts: never let the reported number go backwards, whatever
+      // resolveAccountCount() returned (extra safety net on top of the
+      // persistent UID set itself).
+      const accounts = Math.max(stats.accounts ?? 0, previousAccounts);
+
       const [snapshot, liveCache] = await Promise.all([
         saveDailySnapshot({
-          accounts: stats.accounts,
+          accounts,
           totalVolume: stats.lifetimeVolume,
           monthVolume: stats.monthVolume
         }),
         saveLiveCache({
           updatedAt: new Date().toISOString(),
-          accounts: stats.accounts,
+          accounts,
           lifetimeVolume: stats.lifetimeVolume,
           monthVolume: stats.monthVolume,
           month: stats.monthLabel,
@@ -243,12 +303,11 @@ export default async function handler(req, res) {
         })
       ]);
 
-      const response = formatResponse(stats);
+      const response = formatResponse({ ...stats, accounts });
       response.snapshot = snapshot;
       response.liveCache = liveCache;
       return res.status(200).json(response);
     } catch (err) {
-      // FIX: log the underlying error server-side too, not just in the response.
       console.error('[stats] cron run failed:', err);
       return res.status(200).json({
         success: false, error: err.message,
