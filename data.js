@@ -1,27 +1,39 @@
 // ============================================================
 //  IMO MoreBurn - Site data
 // ============================================================
+//  This is the ONLY file you need to edit to update the numbers.
+//  Once edited, save and push to GitHub: Vercel will redeploy automatically.
+// ============================================================
 
 window.SITE_DATA = {
 
+  // ----------------------------------------------------------
+  //  MAIN METRICS (top of the site, just below the hero)
+  // ----------------------------------------------------------
   metrics: {
-    totalBurned: "54,461",
-    totalBurns: "4",
-    futuresFeeShare: "75%",
-    cadence: "Monthly"
+    totalBurned: "57,826",     // ex: "12,450" - total IMO tokens burned (WEEX share)
+    totalBurns: "5",           // ex: "3" - number of burn transactions executed
+    futuresFeeShare: "75%",    // share of futures fees rebated by WEEX
+    cadence: "Monthly"         // "Weekly" / "Monthly" / "Quarterly"
   },
 
+  // ----------------------------------------------------------
+  //  WEEX CARD (Partnership section)
+  // ----------------------------------------------------------
   weex: {
-    sinceDate: "Since April 2026",
-    accounts: "0",
-    volume48h: "$0",
-    commissionsPending: "$0",
-    imoBurnedViaWeex: "54,461",
-    feesFutures: "75%",
-    feesSpot: "75%",
-    burnAllocation: "50%"
+    sinceDate: "Since April 2026",       // partnership start date
+    accounts: "0",                        // accounts signed up via your link (WEEX dashboard)
+    volume48h: "$0",                      // 48h volume traded by your referrals
+    commissionsPending: "$0",             // commissions accumulated, ready to burn
+    imoBurnedViaWeex: "57,826",            // IMO already burned via WEEX fees
+    feesFutures: "75%",                   // futures fees rebate share
+    feesSpot: "75%",                      // spot fees rebate share
+    burnAllocation: "50%"                 // minimum committed to buy & burn (can go up to 100%)
   },
 
+  // ----------------------------------------------------------
+  //  AFFILIATES HISTORY (chart in the WEEX section)
+  // ----------------------------------------------------------
   affiliatesHistory: [
     { date: "08/04/2026", accounts: 0 },
     { date: "09/04/2026", accounts: 2 },
@@ -48,6 +60,9 @@ window.SITE_DATA = {
     { date: "30/04/2026", accounts: 30 },
   ],
 
+  // ----------------------------------------------------------
+  //  VOLUME HISTORY (bar chart in the WEEX section)
+  // ----------------------------------------------------------
   volumeHistory: [
     { date: "08/04/2026", volume: 0 },
     { date: "09/04/2026", volume: 0 },
@@ -74,7 +89,21 @@ window.SITE_DATA = {
     { date: "30/04/2026", volume: 278676 },
   ],
 
+  // ----------------------------------------------------------
+  //  BURN REGISTRY
+  // ----------------------------------------------------------
   burns: [
+    {
+      date: "17/09/2026",
+      forMonth: "2026-08",
+      amount: "3,365 IMO",
+      usdAmount: 1773,
+      txTotalAmount: "17,824 IMO",
+      txHash: "0x599376d9...df869c",
+      txUrl: "https://basescan.org/tx/0x599376d9ed61d7f9b93d88c97bc8074bf7b28fd39219abef70f680e35ddf869c",
+      source: "WEEX",
+      type: "Burn"
+    },
     {
       date: "04/08/2026",
       forMonth: "2026-07",
@@ -122,6 +151,9 @@ window.SITE_DATA = {
     },
   ],
 
+  // ----------------------------------------------------------
+  //  SOCIAL LINKS (footer)
+  // ----------------------------------------------------------
   socials: {
     twitter: "https://x.com/IMO__Invest",
     telegram: "https://t.me/imo_invest",
