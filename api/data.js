@@ -11,8 +11,8 @@ window.SITE_DATA = {
   //  MAIN METRICS (top of the site, just below the hero)
   // ----------------------------------------------------------
   metrics: {
-    totalBurned: "29,583",      // ex: "12,450" - total IMO tokens burned (WEEX share)
-    totalBurns: "2",           // ex: "3" - number of burn transactions executed
+    totalBurned: "57,826",     // ex: "12,450" - total IMO tokens burned (WEEX share)
+    totalBurns: "5",           // ex: "3" - number of burn transactions executed
     futuresFeeShare: "75%",    // share of futures fees rebated by WEEX
     cadence: "Monthly"         // "Weekly" / "Monthly" / "Quarterly"
   },
@@ -25,7 +25,7 @@ window.SITE_DATA = {
     accounts: "0",                        // accounts signed up via your link (WEEX dashboard)
     volume48h: "$0",                      // 48h volume traded by your referrals
     commissionsPending: "$0",             // commissions accumulated, ready to burn
-    imoBurnedViaWeex: "29,583",            // IMO already burned via WEEX fees
+    imoBurnedViaWeex: "57,826",            // IMO already burned via WEEX fees
     feesFutures: "75%",                   // futures fees rebate share
     feesSpot: "75%",                      // spot fees rebate share
     burnAllocation: "50%"                 // minimum committed to buy & burn (can go up to 100%)
@@ -34,13 +34,7 @@ window.SITE_DATA = {
   // ----------------------------------------------------------
   //  AFFILIATES HISTORY (chart in the WEEX section)
   // ----------------------------------------------------------
-  //  Add a new entry every week (or whenever you want to update the chart).
-  //  The chart displays the evolution over time, like a stock curve.
-  //  Leave the array EMPTY [] if you want to hide the chart for now.
-  // ----------------------------------------------------------
   affiliatesHistory: [
-    // Daily cumulative count of registered accounts.
-    // Update with the latest snapshot every day to keep the curve current.
     { date: "08/04/2026", accounts: 0 },
     { date: "09/04/2026", accounts: 2 },
     { date: "10/04/2026", accounts: 2 },
@@ -68,11 +62,6 @@ window.SITE_DATA = {
 
   // ----------------------------------------------------------
   //  VOLUME HISTORY (bar chart in the WEEX section)
-  // ----------------------------------------------------------
-  //  Cumulative trading volume in USD, one entry per day.
-  //  The bar chart shows the DAILY delta (today minus yesterday).
-  //  Add a new line every day with the latest cumulative total
-  //  (you can read it from /api/stats live response).
   // ----------------------------------------------------------
   volumeHistory: [
     { date: "08/04/2026", volume: 0 },
@@ -103,20 +92,40 @@ window.SITE_DATA = {
   // ----------------------------------------------------------
   //  BURN REGISTRY
   // ----------------------------------------------------------
-  //  Each entry represents the WEEX share of an on-chain burn transaction.
-  //
-  //  Important: each on-chain tx may include multiple burn sources
-  //  (WEEX fees + real estate revenues + other). The "amount" field below
-  //  is the share that comes from WEEX fees only - the part this site
-  //  tracks. The "txTotalAmount" field (optional) is the full amount in
-  //  the transaction, for transparency.
-  //
-  //  The "usdAmount" field is the dollar value of "amount" at the time of
-  //  the burn. It feeds the "USD burned" metric (auto-summed across burns).
-  //
-  //  Leave the array EMPTY [] until your first burn.
-  // ----------------------------------------------------------
   burns: [
+    {
+      date: "17/09/2026",
+      forMonth: "2026-08",
+      amount: "3,365 IMO",
+      usdAmount: 1773,
+      txTotalAmount: "17,824 IMO",
+      txHash: "0x599376d9...df869c",
+      txUrl: "https://basescan.org/tx/0x599376d9ed61d7f9b93d88c97bc8074bf7b28fd39219abef70f680e35ddf869c",
+      source: "WEEX",
+      type: "Burn"
+    },
+    {
+      date: "04/08/2026",
+      forMonth: "2026-07",
+      amount: "6,061 IMO",
+      usdAmount: 2467,
+      txTotalAmount: "21,346 IMO",
+      txHash: "0x7710b810...4ae549",
+      txUrl: "https://basescan.org/tx/0x7710b810d7c6082be0bc499f718afa250d171ffdce9bfd1473bccaa2344ae549",
+      source: "WEEX",
+      type: "Burn"
+    },
+    {
+      date: "07/07/2026",
+      forMonth: "2026-06",
+      amount: "18,817 IMO",
+      usdAmount: 7527,
+      txTotalAmount: "114,000 IMO",
+      txHash: "0xf117b30e...eedac0",
+      txUrl: "https://basescan.org/tx/0xf117b30e621f20b0d8e4ddd50103b453f5af542afafc2ce6248963a15ceedac0",
+      source: "WEEX",
+      type: "Burn"
+    },
     {
       date: "01/06/2026",
       forMonth: "2026-05",
@@ -133,25 +142,13 @@ window.SITE_DATA = {
       forMonth: "2026-04",
       amount: "2,083 IMO",
       usdAmount: 1000,
-      volumeAtBurn: 324449,                 // total cumulative volume at burn time (resets the "Awaiting burn" counter)
+      volumeAtBurn: 324449,
       txTotalAmount: "74,123 IMO",
       txHash: "0x014d6358...91d733ae",
       txUrl: "https://basescan.org/tx/0x014d635853f3284b246f2d0f642477419c1e2cb89ae5365ca7a7b36091d733ae",
       source: "WEEX",
       type: "Burn"
     },
-    // Example to duplicate after your next burn:
-    // {
-    //   date: "15/05/2026",                  // DD/MM/YYYY
-    //   amount: "5,230 IMO",                 // share burned via WEEX fees (shown in chart)
-    //   usdAmount: 487,                      // dollar value of "amount" at burn time (number, no $)
-    //   volumeAtBurn: 850000,                // total cumulative WEEX volume at burn time (read from the live site before burning)
-    //   txTotalAmount: "12,500 IMO",         // optional: full burn in this tx (WEEX + real estate + ...)
-    //   txHash: "0xabc123...def456",         // short hash for display
-    //   txUrl: "https://basescan.org/tx/0xabc123def456",
-    //   source: "WEEX",
-    //   type: "Burn"                         // "Burn" or "Add to LP"
-    // },
   ],
 
   // ----------------------------------------------------------
@@ -159,7 +156,7 @@ window.SITE_DATA = {
   // ----------------------------------------------------------
   socials: {
     twitter: "https://x.com/IMO__Invest",
-    telegram: "https://t.me/imo_invest",          // verify the official link with the IMO team
+    telegram: "https://t.me/imo_invest",
     basescan: "https://basescan.org/token/0x5a7a2bf9ffae199f088b25837dcd7e115cf8e1bb"
   }
 
