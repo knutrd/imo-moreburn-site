@@ -25,9 +25,14 @@ function getCurrentMonthLabel() {
   return now.toISOString().slice(0, 7);  // "2026-05"
 }
 
+function getTodayStartMs() {
+  const now = new Date();
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0);
+}
+
 // ---------- Blob helpers ----------
 
-async function saveDailySnapshot({ accounts, totalVolume, monthVolume }) {
+async function saveDailySnapshot({ accounts, totalVolume, monthVolume, dayVolume }) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return { saved: false, reason: 'no token' };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -37,6 +42,18 @@ async function saveDailySnapshot({ accounts, totalVolume, monthVolume }) {
     accounts,
     volume: Math.round(totalVolume),         // lifetime cumulative (kept for history charts)
     monthVolume: Math.round(monthVolume),    // volume of the current month only
+    // FIX: direct measurement of today's own volume (a dedicated WEEX
+    // query scoped to just today), not a diff between two independently
+    // noisy cumulative recomputations. Previously the volume chart
+    // computed each day's bar as (today's cumulative - yesterday's
+    // cumulative) — since the "cumulative" total is re-summed from ~360
+    // days of WEEX history on every single cron run, it carries a small
+    // % of run-to-run noise, which showed up as occasional fake
+    // multi-million-dollar spikes on random days. dayVolume sidesteps
+    // that entirely. Null when the dedicated query failed this run —
+    // the front-end falls back to the old diff method only for days
+    // missing this field.
+    dayVolume: (typeof dayVolume === 'number' && !Number.isNaN(dayVolume)) ? Math.round(dayVolume) : null,
     month: getCurrentMonthLabel(),
     capturedAt: new Date().toISOString()
   };
@@ -96,11 +113,13 @@ async function fetchAffiliateRaw() {
 async function fetchFullStats() {
   const monthStartMs = getCurrentMonthStartMs();
   const monthLabel = getCurrentMonthLabel();
+  const todayStartMs = getTodayStartMs();
 
-  const [accountsResult, lifetimeResult, monthResult] = await Promise.allSettled([
+  const [accountsResult, lifetimeResult, monthResult, todayResult] = await Promise.allSettled([
     countAffiliates(),
     aggregatePerUser({ label: 'lifetime' }),                                            // lifetime
     aggregatePerUser({ fromMs: monthStartMs, toMs: Date.now(), label: `month-${monthLabel}` }),  // current month only
+    aggregatePerUser({ fromMs: todayStartMs, toMs: Date.now(), label: 'today' }),        // FIX: today's own volume, queried directly
   ]);
 
   // Log failures loudly instead of silently falling back to empty arrays.
@@ -117,6 +136,12 @@ async function fetchFullStats() {
   if (monthResult.status === 'rejected') {
     console.error('[fetchFullStats] month aggregation failed:', monthResult.reason);
   }
+  if (todayResult.status === 'rejected') {
+    // Not fatal: dayVolume is a nice-to-have direct measurement. If it
+    // fails this run, saveDailySnapshot() just stores null for it, and
+    // the front-end falls back to the old diff-based estimate for today.
+    console.error('[fetchFullStats] today aggregation failed (non-fatal):', todayResult.reason);
+  }
 
   // If the core WEEX calls failed, stop here instead of continuing with
   // empty data. The caller's catch block will surface this clearly
@@ -131,9 +156,11 @@ async function fetchFullStats() {
   const accountsCount = accountsResult.status === 'fulfilled' ? accountsResult.value : null;
   const lifetimeUsers = lifetimeResult.value;
   const monthUsers = monthResult.value;
+  const todayUsers = todayResult.status === 'fulfilled' ? todayResult.value : null;
 
   const lifetimeVolume = lifetimeUsers.reduce((s, u) => s + u.totalVolume, 0);
   const monthVolume = monthUsers.reduce((s, u) => s + u.totalVolume, 0);
+  const dayVolume = todayUsers ? todayUsers.reduce((s, u) => s + u.totalVolume, 0) : null;
 
   // Leaderboard ranked by LIFETIME cumulative volume (since launch)
   const top = lifetimeUsers.slice(0, TOP_N).map((u, i) => ({
@@ -148,6 +175,7 @@ async function fetchFullStats() {
     accounts: accountsCount,   // may be null if countAffiliates() itself threw — handled by caller
     lifetimeVolume,
     monthVolume,
+    dayVolume,
     monthLabel: getCurrentMonthLabel(),
     top,
     totalTraders: lifetimeUsers.length,
@@ -252,7 +280,8 @@ export default async function handler(req, res) {
         saveDailySnapshot({
           accounts,
           totalVolume: stats.lifetimeVolume,
-          monthVolume: stats.monthVolume
+          monthVolume: stats.monthVolume,
+          dayVolume: stats.dayVolume
         }),
         saveLiveCache({
           updatedAt: new Date().toISOString(),
