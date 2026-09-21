@@ -1737,12 +1737,19 @@
       (data.affiliatesHistory || []).forEach(p => baseAffiliates.set(p.date, p.accounts));
       const baseVolume = new Map();
       (data.volumeHistory || []).forEach(p => baseVolume.set(p.date, p.volume));
+      // FIX: direct per-day volume when the snapshot has it (new snapshots
+      // only — older ones predate this field and stay undefined here,
+      // which drawVolumeChart treats as "fall back to the diff method").
+      const baseDayVolume = new Map();
 
       // Overlay blob snapshots on top of fallback data
       snapshots.forEach(s => {
         const frDate = toFr(s.date);
         baseAffiliates.set(frDate, s.accounts);
         baseVolume.set(frDate, s.volume);
+        if (typeof s.dayVolume === 'number' && !Number.isNaN(s.dayVolume)) {
+          baseDayVolume.set(frDate, s.dayVolume);
+        }
       });
 
       // Override today's point with live API values to eliminate the up-to-15-min lag
@@ -1774,7 +1781,7 @@
         .map(([date, accounts]) => ({ date, accounts }))
         .sort((a, b) => parseFr(a.date) - parseFr(b.date));
       const volumeHistory = Array.from(baseVolume.entries())
-        .map(([date, volume]) => ({ date, volume }))
+        .map(([date, volume]) => ({ date, volume, dayVolume: baseDayVolume.has(date) ? baseDayVolume.get(date) : null }))
         .sort((a, b) => parseFr(a.date) - parseFr(b.date));
 
       // Destroy existing Chart.js instances before redrawing
@@ -2006,11 +2013,25 @@
 
     // Sort by date
     const sorted = [...history]
-      .map(p => ({ date: parseFrDate(p.date), volume: parseFloat(p.volume) || 0, label: p.date }))
+      .map(p => ({
+        date: parseFrDate(p.date),
+        volume: parseFloat(p.volume) || 0,
+        dayVolume: (typeof p.dayVolume === 'number' && !Number.isNaN(p.dayVolume)) ? p.dayVolume : null,
+        label: p.date
+      }))
       .sort((a, b) => a.date - b.date);
 
-    // Compute daily delta from cumulative volume
+    // FIX: prefer the direct per-day measurement (a dedicated WEEX query
+    // scoped to just that day) when available. It isn't affected by
+    // noise in the cumulative "lifetime" recompute, unlike the diff
+    // fallback below, which occasionally produced fake multi-million
+    // dollar spikes purely from run-to-run recompute noise. Snapshots
+    // from before this fix don't have dayVolume, so they keep using the
+    // diff method — this only improves data going forward.
     const dailyData = sorted.map((p, i) => {
+      if (p.dayVolume !== null) {
+        return { label: p.label, daily: Math.max(0, p.dayVolume), cumul: p.volume };
+      }
       const prev = i > 0 ? sorted[i - 1].volume : 0;
       const delta = Math.max(0, p.volume - prev);
       return { label: p.label, daily: delta, cumul: p.volume };
